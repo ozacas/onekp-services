@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server port="8005" shutdown="SHUTDOWN">
+  <Listener className="org.apache.tomee.catalina.ServerListener"/>
+  <Listener className="org.apache.catalina.security.SecurityListener"/>
+
+  <Service name="Catalina">
+    <Connector port="8080" protocol="HTTP/1.1"/>
+    <Engine name="Catalina" defaultHost="localhost">
+
+      <Realm className="org.apache.catalina.realm.JAASRealm" appName="PropertiesLoginModule"
+             userClassNames="org.apache.openejb.core.security.jaas.UserPrincipal"
+             roleClassNames="org.apache.openejb.core.security.jaas.GroupPrincipal">
+      </Realm>
+
+      <Host name="localhost" appBase="webapps"/>
+    </Engine>
+  </Service>
+</Server>
