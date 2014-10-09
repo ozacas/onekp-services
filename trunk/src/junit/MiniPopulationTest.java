@@ -6,8 +6,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -29,6 +31,7 @@ public class MiniPopulationTest {
 	private EntityManagerFactory singleton;
 	private EntityManager singleton_manager;
 	private DatasetDesignation dsd = new DatasetDesignation("mini", "A silly test database");
+	private Logger logger = Logger.getLogger("MiniPopulationTest");
 	
 	private String getPersistenceUnit() {
 		return "seqdb_mini";
@@ -93,11 +96,14 @@ public class MiniPopulationTest {
 		// save fasta records to database
 		assertNotNull(files);
 		assertEquals(1, files.size());
-		FastaPersistor fp = new FastaPersistor(files, SequenceType.AA);
-		
+	
 		try {
+			File f2 = File.createTempFile("MinPopTest", "_seqref.tsv");
+			FastaPersistor fp = new FastaPersistor(files, SequenceType.AA, logger, new PrintWriter(f2));
 			int n = fp.populateDatabase(getEntityManager(), dsd);
+			fp.saveSequenceReferences(f2, getEntityManager());
 			assertEquals(2, n);
+			f2.delete();
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Must not throw exception during database population");
@@ -133,9 +139,11 @@ public class MiniPopulationTest {
 		List<FastaFile> files = new ArrayList<FastaFile>();
 		files.add(ff);
 		
-		FastaPersistor fp = new FastaPersistor(files, SequenceType.AA);
 		try {
+			File f2 = File.createTempFile("MinPopTest", "_seqref.tsv");
+			FastaPersistor fp = new FastaPersistor(files, SequenceType.AA, logger, new PrintWriter(f2));
 			int n = fp.populateDatabase(getEntityManager(), dsd);
+			fp.saveSequenceReferences(f2, getEntityManager());
 			assertEquals(269051, n);
 		} catch (Exception e) {
 			e.printStackTrace();
