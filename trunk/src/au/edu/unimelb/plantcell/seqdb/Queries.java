@@ -28,6 +28,11 @@ public class Queries {
 		this.em = em;
 	}
 	
+	protected EntityManager getEntityManager() {
+		assert(em != null);
+		return em;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public String getSequence(final File fasta_file, final String seqID) {
 		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath");

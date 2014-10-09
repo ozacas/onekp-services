@@ -1,6 +1,5 @@
 package au.edu.unimelb.plantcell.services.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -20,20 +19,30 @@ import org.apache.commons.lang.WordUtils;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.Queries;
+import au.edu.unimelb.plantcell.seqdb.SingleFastaDatasetQueries;
 
-@Path("/k25")
+
+/**
+ * The implementation of this service is quite different to the contig k25 service. The
+ * reason for that is the fasta file's served are not one file per sample but rather one fasta file only
+ * with all samples. This changes the queries considerably.
+ * 
+ * @author acassin
+ *
+ */
+@Path("/k25s")
 @Stateless
 @Produces(MediaType.TEXT_PLAIN)
-public class k25Service implements OneKPSequenceService {
-	private final static Logger logger = Logger.getLogger("k25Service");
+public class k25ScaffoldService implements OneKPSequenceService {
+	private final static Logger logger = Logger.getLogger("k25sService");
 	
-	@PersistenceContext(unitName="seqdb_onekp_k25")			// must match persistence.xml entry
-	private EntityManager seqdb_onekp_k25;
+	@PersistenceContext(unitName="seqdb_onekp_k25s")			// must match persistence.xml entry
+	private EntityManager seqdb_onekp_k25s;
 	
 	@Override
 	public EntityManager getEntityManager() {
-		assert(seqdb_onekp_k25 !=  null);
-		return seqdb_onekp_k25;
+		assert(seqdb_onekp_k25s !=  null);
+		return seqdb_onekp_k25s;
 	}
 	
 	@Override
@@ -54,30 +63,26 @@ public class k25Service implements OneKPSequenceService {
 	 * @throws IOException
 	 */
 	private void validateID(final String id) throws IOException {
-		if (!id.matches("^[A-Z]{4}_\\d+")) {
-			throw new IOException("Invalid 1KP ID: expected eg. ABCD_1234");
+		if (!id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
+			throw new IOException("Invalid 1KP ID: expected eg. scaffold-ABCD-1234");
 		}
 		logger.info(id+" is valid.");
-	}
+	}	
 	
 	private Response doGet(final String id, SequenceType[] sequence_types) {
 		try {
 			validateID(id);
-			String onekp_sample_id = id.substring(0,4);
 			String seq_id = id.substring(5);
 			EntityManager em = validateDatabaseConnection();
-			Queries q = new Queries(em);
-			if (q != null) {
-				logger.info("Constructed valid queries object.");
-			} 
+			SingleFastaDatasetQueries q = new SingleFastaDatasetQueries(em);
 			StringBuilder sb = new StringBuilder(10 * 1024);
 			for (SequenceType st : sequence_types) {
-				File     f = q.findFastaFile(onekp_sample_id, st);
-				if (f != null) {
-					sb.append(q.getSequence(f, seq_id));
+				String entry = q.getSequence(seq_id, st);
+				if (entry != null) {
+					sb.append(q);
 					sb.append('\n');
 				} else {
-					logger.warning("Could not locate FASTA file for ("+st+"): "+onekp_sample_id);
+					logger.warning("No entry for "+st+" for ID: "+id);
 				}
 			}
 			logger.fine("Created result for "+seq_id);
@@ -106,50 +111,22 @@ public class k25Service implements OneKPSequenceService {
 		return doGet(id, new SequenceType[] { SequenceType.RNA });
 	}
 	
-	@GET
-	@Path("all/{id}")
-	@RolesAllowed("1kp_user")
 	@Override
-	public Response getAll(@PathParam("id") final String id) {
-		logger.fine("Getting all available sequence: "+(id != null));
+	public Response getAll(String id) {
+		logger.fine("Getting all sequences for "+(id != null));
 		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
-	
-	@GET
-	@Path("proteome/{sample}")
-	@RolesAllowed("1kp_user")
-	@Override
-	public Response getProteome(@PathParam("sample") final String onekp_sample_id) {
-		return getSample(onekp_sample_id, SequenceType.AA);
-	}
-	
-	public Response getSample(final String onekp_sample_id, final SequenceType st) {
-		try {
-			EntityManager em = validateDatabaseConnection();
-			Queries q = new Queries(em);
-			if (q != null) {
-				logger.info("Constructed valid queries object.");
-			} 
 
-			File     f = q.findFastaFile(onekp_sample_id, st);
-			if (f != null) {
-					return Response.ok(f).build();
-			} else {
-					throw new IOException("Could not locate FASTA file for proteome: "+onekp_sample_id);
-			}
-		} catch (Exception e) {
-			//e.printStackTrace();
-			logger.warning(e.getMessage());
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-		}
+	@Override
+	public Response getProteome(String onekp_sample_id) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	@GET
-	@Path("transcriptome/{sample}")
-	@RolesAllowed("1kp_user")
 	@Override
-	public Response getTranscriptome(@PathParam("sample") final String onekp_sample_id) {
-		return getSample(onekp_sample_id, SequenceType.RNA);
+	public Response getTranscriptome(String onekp_sample_id) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@GET
@@ -159,13 +136,13 @@ public class k25Service implements OneKPSequenceService {
 	public Response getSummary(@PathParam("sample") final String onekp_sample_id) {
 		try {
 			EntityManager em = validateDatabaseConnection();
-			Queries q = new Queries(em);
+			SingleFastaDatasetQueries q = new SingleFastaDatasetQueries(em);
 			if (q != null) {
 				logger.info("Constructed valid queries object.");
 			} 
-			int n_prots = q.countSequencesInFile(onekp_sample_id, SequenceType.AA);
-			int n_transcripts = q.countSequencesInFile(onekp_sample_id, SequenceType.RNA);
-			SampleAnnotation sa = q.getSampleMetadata(onekp_sample_id);
+			int n_prots         = 0;//q.countSequencesInSample(onekp_sample_id, SequenceType.AA);
+			int n_transcripts   = 0;// q.countSequencesInSample(onekp_sample_id, SequenceType.RNA);
+			SampleAnnotation sa = null; //q.getSampleMetadata(onekp_sample_id);
 			
 			StringBuilder sb = new StringBuilder();
 			sb.append("Sample ID: "+onekp_sample_id+"\n");
@@ -182,4 +159,5 @@ public class k25Service implements OneKPSequenceService {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
 		}
 	}
+	
 }

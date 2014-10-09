@@ -11,8 +11,6 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import org.apache.openjpa.persistence.jdbc.Index;
-
 
 /**
  * Refers to an entry in a single FASTA file, identified by a byte-offset and length.
@@ -37,7 +35,6 @@ public class SequenceReference {
 	private long start_offset;	// byte offset from start of fasta file
 	private int  length;		// how many BYTES to read from the start offset
 		
-	@Index
 	@Column(name="SEQ_ID")
 	private String seqID;
 	
