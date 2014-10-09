@@ -1,5 +1,7 @@
 package au.edu.unimelb.plantcell.jpa.dao;
 
+import java.io.PrintWriter;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -23,6 +25,8 @@ import org.apache.openjpa.persistence.jdbc.Index;
 @Entity
 @Table(name="SEQUENCEREFERENCE")
 public class SequenceReference {
+	private static int unique_id = 1;
+	
 	@Id
 	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	private int id;
@@ -73,5 +77,24 @@ public class SequenceReference {
 
 	public boolean hasSequenceID() {
 		return (seqID != null && seqID.length() > 0);
+	}
+
+	/**
+	 * Saves the current state of this in a format suitable for mysql's load local data infile... (column order is VERY important
+	 * and must match schema exactly)
+	 * 
+	 * @param pw
+	 */
+	public void save(final PrintWriter pw) {
+		assert(pw != null);
+		pw.append(String.valueOf(unique_id++));		// we cant use the id field: since we are not using getEntityManager().persist()
+		pw.append('\t');
+		pw.append(String.valueOf(getLength()));
+		pw.append('\t');
+		pw.append(getSequenceID());
+		pw.append('\t');
+		pw.append(String.valueOf(getStart()));
+		pw.append('\t');
+		pw.println(String.valueOf(fasta.getID()));
 	}
 }

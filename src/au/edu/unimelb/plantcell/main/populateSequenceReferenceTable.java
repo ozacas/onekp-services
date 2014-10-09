@@ -4,6 +4,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -19,12 +20,12 @@ import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.FastaPersistor;
 import au.edu.unimelb.plantcell.seqdb.SamplePersistor;
 
-public class Main {
+public class populateSequenceReferenceTable {
 	private static EntityManagerFactory singleton;
 	private static EntityManager singleton_manager;
 	
 	private static String getPersistenceUnit() {
-		return "seqdb_onekp";
+		return "seqdb_onekp_k25s";
 	}
 	
 	private static EntityManagerFactory getEntityManagerFactory() {
@@ -44,7 +45,7 @@ public class Main {
 	
 	public static void main(String[] args) {
 		// 1. first populate the sample metadata table
-		File f = new File("/tmp/1kp_sample_list_20140925.csv");
+		File f = new File("c:/temp/1kp_sample_list_20140925.csv");
 		SamplePersistor sp = new SamplePersistor();
 		Logger log = Logger.getLogger("OneKP");
 		
@@ -57,12 +58,12 @@ public class Main {
 		}
 		
 		// 2. open set of data files and populate the database
-		File root = new File("/1kp/4website/");
+		File root = new File("c:/1kp/4website/");
 		File[] datasets = root.listFiles(new FileFilter() {
 
 			@Override
 			public boolean accept(File f) {
-				if (f.isDirectory() && f.getName().matches("^k\\d+$")) {
+				if (f.isDirectory() && f.getName().matches("^k\\d+s$")) {
 					return true;
 				}
 				return false;
@@ -104,13 +105,27 @@ public class Main {
 			
 			log.info("Found "+protein_files.size()+" proteomes for dataset: "+dsd.getLabel());
 			log.info("Found "+transcript_files.size()+" transcriptomes for dataset: "+dsd.getLabel());
+			
+
 			try {
-				FastaPersistor prot = new FastaPersistor(protein_files, SequenceType.AA);
+				File seq_ref_tsv = File.createTempFile("4website_seqref", ".seqref.tsv");
+				log.info("Storing SequenceReference records to: "+seq_ref_tsv.getAbsolutePath());
+				
+				log.info("Computing sequence records for "+protein_files.size()+" protein files.");
+				PrintWriter pw = new PrintWriter(seq_ref_tsv);
+				
+				FastaPersistor prot = new FastaPersistor(protein_files, SequenceType.AA, log, pw);
 				int n_prot = prot.populateDatabase(getEntityManager(), dsd);
-				FastaPersistor trans = new FastaPersistor(transcript_files, SequenceType.RNA);
+				log.info("Processed "+n_prot+" AA sequence records");
+
+				log.info("Computing sequence records for "+transcript_files.size()+" transcript files.");
+				FastaPersistor trans = new FastaPersistor(transcript_files, SequenceType.RNA, log, pw);
 				int n_trans = trans.populateDatabase(getEntityManager(), dsd);
-				log.info("Persisted sequence records for "+n_prot+" OneKP proteomes to database");
-				log.info("Persisted sequence records for "+n_trans+" OneKP transcriptomes to database");
+				log.info("Processed "+n_trans+" RNA sequence records");
+				
+				pw.close();
+				trans.saveSequenceReferences(seq_ref_tsv, getEntityManager());
+				seq_ref_tsv.delete();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
