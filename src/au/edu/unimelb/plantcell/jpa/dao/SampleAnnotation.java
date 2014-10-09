@@ -5,7 +5,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
 
 /**
  * 
@@ -19,16 +18,11 @@ public class SampleAnnotation {
 	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	private int id;
 	
-	@NotNull
 	private String sample_id;		// always four characters
 	private String sample_type;		// eg. single or pooled
-	@NotNull
 	private String taxonomic_clade;	// eg. basal eudicots
-	@NotNull
 	private String taxonomic_order;	
-	@NotNull
 	private String taxonomic_family;
-	@NotNull
 	private String species_name;
 	
 	private String tissue_type;		// optional
