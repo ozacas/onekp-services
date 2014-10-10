@@ -27,4 +27,16 @@ public class FastaKey {
 	public boolean hasSampleID(String cur) {
 		return this.sample_id.equals(cur);
 	}
+
+	public int getFastaID() {
+		return this.fasta_id;
+	}
+
+	public boolean has(final String id, final int fasta_id) {
+		return (hasSampleID(id) && getFastaID() == fasta_id);
+	}
+
+	public String getSampleID() {
+		return this.sample_id;
+	}
 }

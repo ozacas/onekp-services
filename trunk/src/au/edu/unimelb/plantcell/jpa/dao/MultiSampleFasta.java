@@ -5,6 +5,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import au.edu.unimelb.plantcell.main.FastaKey;
+
 /**
  * Fasta files describing more than one OneKP sample need a special table to provide
  * support for finding a particular sample's sequences, quickly. This is needed to report
@@ -29,12 +31,22 @@ public class MultiSampleFasta {
 	private int    n;		// number of sequences for the specified sample AND Fasta file
 	private long   start;	// where do the sequences start in the fasta file
 	private long   end;		// and where do they stop? (contiguity is required)
+	private int    fasta_id;		// foreign key into FastaFile table
 	
 	public MultiSampleFasta() {
 		setSampleID("");
 		setN(0);
-		setStart(0);
+		setStart(Long.MAX_VALUE);
 		setEnd(0);
+		setFastaID(-1);
+	}
+	
+	public int getFastaID() {
+		return fasta_id;
+	}
+	
+	public void setFastaID(int new_fasta_id) {
+		fasta_id = new_fasta_id;
 	}
 	
 	public String getSampleID() {
@@ -69,7 +81,7 @@ public class MultiSampleFasta {
 		this.n = n;
 	}
 	
-	public void updateToIncludeSequence(SequenceReference sr) throws IllegalArgumentException {
+	public void updateToIncludeSequence(final SequenceReference sr) throws IllegalArgumentException {
 		assert(sr != null);
 		this.n++;
 		if (!(sr.getSequenceID().indexOf(getSampleID()) >= 0)) {
@@ -83,5 +95,10 @@ public class MultiSampleFasta {
 		if (end > getEnd()) {
 			setEnd(end);
 		}
+	}
+
+	public void setFasta(FastaKey cur) {
+		setFastaID(cur.getFastaID());
+		setSampleID(cur.getSampleID());
 	}
 }

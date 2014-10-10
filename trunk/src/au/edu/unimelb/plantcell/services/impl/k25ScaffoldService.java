@@ -18,7 +18,6 @@ import org.apache.commons.lang.WordUtils;
 
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
-import au.edu.unimelb.plantcell.seqdb.Queries;
 import au.edu.unimelb.plantcell.seqdb.SingleFastaDatasetQueries;
 
 
