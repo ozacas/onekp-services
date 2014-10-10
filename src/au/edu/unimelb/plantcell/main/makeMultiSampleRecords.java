@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -17,10 +18,7 @@ import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 public class makeMultiSampleRecords {
 	private static Logger logger = Logger.getLogger("makeMultiSampleRecords");
 	
-	public void run() throws Exception {
-		HashMap<FastaKey,MultiSampleFasta> id2rec = new HashMap<FastaKey,MultiSampleFasta>();
-		String cur = null;
-		
+	public void run() throws Exception {		
 		Properties props = new Properties();
 		props.put("user", "root");
 		props.put("password", "Ethgabitc!");
@@ -34,6 +32,8 @@ public class makeMultiSampleRecords {
 		st.setFetchSize(batch_size);
 		st.setMaxRows(batch_size);
 		HashMap<String,Integer> counts = new HashMap<String,Integer>();
+		HashMap<FastaKey,MultiSampleFasta> id2rec = new HashMap<FastaKey,MultiSampleFasta>();
+
 		do {
 			String sql = "select sr.SEQ_ID,sr.LENGTH,sr.START_OFFSET,sr.FASTA_ID from SEQUENCEREFERENCE as sr order by sr.id limit "+n+","+batch_size;
 			logger.info("SQL: "+sql);
@@ -43,15 +43,17 @@ public class makeMultiSampleRecords {
 				break;
 			}
 			
-			if (n >= 200000) { break; }
 			MultiSampleFasta msf;
+			FastaKey cur = null;
+
 			while (rs.next()) {
 				SequenceReference sr = new SequenceReference();
 				sr.setSequenceID(rs.getString(1));
 				sr.setStart(rs.getLong(3));
 				sr.setLength(rs.getInt(2));
 				String sample_id = getSampleID(sr.getSequenceID());
-				FastaKey fk = new FastaKey(sample_id, rs.getInt(4));
+				int fasta_id = rs.getInt(4);
+				FastaKey fk = new FastaKey(sample_id, fasta_id);
 				Integer count = counts.get(sample_id);
 				if (count == null) {
 					count = new Integer(1);
@@ -62,18 +64,18 @@ public class makeMultiSampleRecords {
 			
 
 				if (cur == null) {
-					cur = sample_id;
+					cur = fk;
 					msf = new MultiSampleFasta();
-					msf.setSampleID(cur);
-					id2rec.put(fk, msf);
-				} else if (!sample_id.equals(cur)) {
-					if (id2rec.containsKey(sample_id)) {
-						throw new Exception("Sample "+sample_id+" does not have contiguous sequence records -- programmer error!");
+					msf.setFasta(cur);
+					id2rec.put(cur, msf);
+				} else if (!fk.equals(cur)) {
+					if (id2rec.containsKey(fk)) {
+						throw new Exception("Sample "+fk.getSampleID()+" does not have contiguous sequence records -- programmer error!");
 					}
 					msf = new MultiSampleFasta();
-					msf.setSampleID(sample_id);
+					msf.setFasta(fk);
 					id2rec.put(fk, msf);
-					cur = sample_id;
+					cur = fk;
 				} else {
 					msf = findFastaKey(id2rec, cur);
 					if (msf == null) {
@@ -87,21 +89,13 @@ public class makeMultiSampleRecords {
 		} while (true);
 		
 		saveMultiSampleFastaRecords(id2rec.values(), conn.createStatement());
-		
-		for (String key : counts.keySet()) {
-			//logger.info("Got sequence ID: "+key+" "+counts.get(key)+" times.");
-		}
+	
 		logger.info("Saw "+counts.keySet().size()+" distinct sequence ID's.");
 	}
 
 	private MultiSampleFasta findFastaKey(
-			HashMap<FastaKey, MultiSampleFasta> id2rec, String cur) {
-		for (FastaKey fk : id2rec.keySet()) {
-			if (fk.hasSampleID(cur)) {
-				return id2rec.get(fk);
-			}
-		}
-		return null;
+			final Map<FastaKey, MultiSampleFasta> id2rec, final FastaKey fk) {
+		return id2rec.get(fk);	
 	}
 
 	private void saveMultiSampleFastaRecords(final Collection<MultiSampleFasta> values, final Statement st) throws IOException,SQLException {
@@ -110,9 +104,10 @@ public class makeMultiSampleRecords {
 		st.execute("truncate table MULTISAMPLEFASTA;");
 		int id = 1;
 		for (MultiSampleFasta msf : values) {
-			boolean ok = st.execute("insert into MULTISAMPLEFASTA (ID, N, START, END, ONEKP_SAMPLE_ID) values ("+
-					id+", "+msf.getN()+", "+msf.getStart()+", "+msf.getEnd()+", '"+msf.getSampleID()
-					+"');");
+			String line = id+", "+msf.getN()+", "+msf.getStart()+", "+msf.getEnd()+", '"+msf.getSampleID()
+					+"', "+msf.getFastaID();
+			st.execute("insert into MULTISAMPLEFASTA (ID, N, START, END, ONEKP_SAMPLE_ID, FASTA_ID) values ("+line+");");
+			logger.info(line);
 			id++;
 		}
 	}
