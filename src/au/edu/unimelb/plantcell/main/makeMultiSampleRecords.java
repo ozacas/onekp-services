@@ -31,8 +31,8 @@ public class makeMultiSampleRecords {
 		int n = 0;
 		st.setFetchSize(batch_size);
 		st.setMaxRows(batch_size);
-		HashMap<String,Integer> counts = new HashMap<String,Integer>();
 		HashMap<FastaKey,MultiSampleFasta> id2rec = new HashMap<FastaKey,MultiSampleFasta>();
+		FastaKey cur = null;
 
 		do {
 			String sql = "select sr.SEQ_ID,sr.LENGTH,sr.START_OFFSET,sr.FASTA_ID from SEQUENCEREFERENCE as sr order by sr.id limit "+n+","+batch_size;
@@ -44,8 +44,6 @@ public class makeMultiSampleRecords {
 			}
 			
 			MultiSampleFasta msf;
-			FastaKey cur = null;
-
 			while (rs.next()) {
 				SequenceReference sr = new SequenceReference();
 				sr.setSequenceID(rs.getString(1));
@@ -54,14 +52,6 @@ public class makeMultiSampleRecords {
 				String sample_id = getSampleID(sr.getSequenceID());
 				int fasta_id = rs.getInt(4);
 				FastaKey fk = new FastaKey(sample_id, fasta_id);
-				Integer count = counts.get(sample_id);
-				if (count == null) {
-					count = new Integer(1);
-					counts.put(sr.getSequenceID(), count);
-				} else {
-					counts.put(sr.getSequenceID(),  count.intValue()+1);
-				}
-			
 
 				if (cur == null) {
 					cur = fk;
@@ -89,8 +79,11 @@ public class makeMultiSampleRecords {
 		} while (true);
 		
 		saveMultiSampleFastaRecords(id2rec.values(), conn.createStatement());
-	
-		logger.info("Saw "+counts.keySet().size()+" distinct sequence ID's.");
+		
+		for (FastaKey fk : id2rec.keySet()) {
+			logger.info(fk.getSampleID()+" "+fk.getFastaID());
+		}
+		conn.close();
 	}
 
 	private MultiSampleFasta findFastaKey(

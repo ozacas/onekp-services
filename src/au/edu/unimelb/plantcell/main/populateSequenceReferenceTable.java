@@ -45,7 +45,7 @@ public class populateSequenceReferenceTable {
 	
 	public static void main(String[] args) {
 		// 1. first populate the sample metadata table
-		File f = new File("c:/temp/1kp_sample_list_20140925.csv");
+		File f = new File("/tmp/1kp_sample_list_20140925.csv");
 		SamplePersistor sp = new SamplePersistor();
 		Logger log = Logger.getLogger("OneKP");
 		
@@ -58,7 +58,7 @@ public class populateSequenceReferenceTable {
 		}
 		
 		// 2. open set of data files and populate the database
-		File root = new File("c:/1kp/4website/");
+		File root = new File("/1kp/4website/");
 		File[] datasets = root.listFiles(new FileFilter() {
 
 			@Override
