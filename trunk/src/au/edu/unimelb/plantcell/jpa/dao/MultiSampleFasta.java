@@ -1,9 +1,12 @@
 package au.edu.unimelb.plantcell.jpa.dao;
 
+import java.util.logging.Logger;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import au.edu.unimelb.plantcell.main.FastaKey;
 
@@ -22,7 +25,11 @@ import au.edu.unimelb.plantcell.main.FastaKey;
  *
  */
 @Entity
+@Table(name="MULTISAMPLEFASTA")
 public class MultiSampleFasta {
+	private final static Logger logger = Logger.getLogger("MultiSampleFasta");
+	private int logged = 0;
+	
 	@Id
 	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	private int id;
@@ -84,16 +91,23 @@ public class MultiSampleFasta {
 	public void updateToIncludeSequence(final SequenceReference sr) throws IllegalArgumentException {
 		assert(sr != null);
 		this.n++;
-		if (!(sr.getSequenceID().indexOf(getSampleID()) >= 0)) {
+		String sample_id = getSampleID();
+		if (!(sr.getSequenceID().indexOf(sample_id) >= 0)) {
 			throw new IllegalArgumentException("No sample ID in sequence ID!");
+		}
+		if (sample_id.equals("ABIJ") && logged < 10) {
+			logger.info(sample_id+": fasta="+getFastaID()+" "+sr.getStart()+ " - "+(sr.getStart()+sr.getLength()));
+			logged++;
 		}
 		long start = sr.getStart();
 		if (start < getStart()) {
 			setStart(start);
+			logger.info("Adjusted start to "+start);
 		}
 		long end = start + sr.getLength();
 		if (end > getEnd()) {
 			setEnd(end);
+			//logger.info("Adjusted end to "+end);
 		}
 	}
 
