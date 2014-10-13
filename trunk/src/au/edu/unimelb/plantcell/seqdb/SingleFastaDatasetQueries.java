@@ -9,6 +9,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
+import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 
@@ -66,6 +67,20 @@ public class SingleFastaDatasetQueries {
 				}
 			}
 		}
+	}
+
+	public int countSequencesInSample(final String onekp_sample_id, final SequenceType st) throws NoResultException {
+		Query q = em.createQuery("select msf.n from MultiSampleFasta msf, FastaFile ff where msf.fasta_id = ff.fasta_id and msf.sample_id = :sample and ff.sequence_type = :st");
+		q.setParameter("sample", onekp_sample_id);
+		q.setParameter("st", st);
+		Integer n = (Integer) q.getSingleResult();
+		return n.intValue();
+	}
+
+	public SampleAnnotation getSampleMetadata(final String sample_id) throws NoResultException {
+		Query q = em.createQuery("select sa from SampleAnnotation sa where sa.sample_id = :sample");
+		q.setParameter("sample", sample_id);
+		return (SampleAnnotation) q.getSingleResult();
 	}
 	
 	

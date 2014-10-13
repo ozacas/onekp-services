@@ -82,21 +82,23 @@ public class FastaPersistor {
 		assert(pw != null && fasta_path != null && em != null && dsd != null);
 		BufferedReader rdr = new BufferedReader(new FileReader(new File(fasta_path)));
 		int n = 0;
+		int saved = 0;
 		em.getTransaction().begin();
 		FastaFile ff = getFastaRecord(em, fasta_path, persistDatasetDesignation(em, dsd));
 		em.getTransaction().commit();
 		try {
 			String line;
-			int offset = 0;
-			int cur_start = -1;
+			long offset = 0;
+			long cur_start = -1;
 			SequenceReference sr = newSequenceReference(ff);
 			while ((line = rdr.readLine()) != null) {
 				if (line.startsWith(">")) {
+					n++;
 					if (cur_start >= 0) {
-						sr.setLength(offset - cur_start - 1);
+						sr.setLength((int) (offset - cur_start - 1));
 						sr.save(pw);
+						saved++;
 						sr = newSequenceReference(ff);
-						n++;
 					}
 					sr.setStart(offset);
 					cur_start = offset;
@@ -104,22 +106,28 @@ public class FastaPersistor {
 					if (id_end < 0) {
 						id_end = line.length();
 					}
-					sr.setSequenceID(line.substring(1, id_end));
-				}
+					String id = line.substring(1, id_end);
+					sr.setSequenceID(id);
+				} 
 				offset += line.length() + 1;		// +1 for newline
 			}
 			
 			if (sr.hasSequenceID()) {
-				sr.setLength(offset - cur_start - 1);
+				sr.setLength((int) (offset - cur_start - 1));
 				sr.save(pw);
-				n++;
+				saved++;
 			}
+			
+			logger.info("Saved "+saved+" sequences, processed: "+n);
+			if (n != saved) {
+				throw new IOException("Did not save all fasta sequences processed! "+n+" != "+saved);
+			}
+			return n;
 		} catch (Exception e) {
 			throw e;
 		} finally {
 			rdr.close();
 		}
-		return n;
 	}
 
 	private SequenceReference newSequenceReference(final FastaFile ff) {

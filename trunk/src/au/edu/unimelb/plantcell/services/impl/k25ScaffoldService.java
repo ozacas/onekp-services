@@ -139,9 +139,9 @@ public class k25ScaffoldService implements OneKPSequenceService {
 			if (q != null) {
 				logger.info("Constructed valid queries object.");
 			} 
-			int n_prots         = 0;//q.countSequencesInSample(onekp_sample_id, SequenceType.AA);
-			int n_transcripts   = 0;// q.countSequencesInSample(onekp_sample_id, SequenceType.RNA);
-			SampleAnnotation sa = null; //q.getSampleMetadata(onekp_sample_id);
+			int n_prots         = q.countSequencesInSample(onekp_sample_id, SequenceType.AA);
+			int n_transcripts   = q.countSequencesInSample(onekp_sample_id, SequenceType.RNA);
+			SampleAnnotation sa = q.getSampleMetadata(onekp_sample_id);
 			
 			StringBuilder sb = new StringBuilder();
 			sb.append("Sample ID: "+onekp_sample_id+"\n");
