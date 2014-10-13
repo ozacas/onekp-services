@@ -17,7 +17,7 @@
       <property name="eclipselink.ddl-generation" value="create-tables" />
       <property name="eclipselink.ddl-generation.output-mode" value="database" />
       
-     <!-- <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)"/> -->
+      <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)"/>
     </properties>
   </persistence-unit>
   

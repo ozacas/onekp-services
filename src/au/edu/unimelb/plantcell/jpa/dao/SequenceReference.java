@@ -84,14 +84,11 @@ public class SequenceReference {
 	 */
 	public void save(final PrintWriter pw) {
 		assert(pw != null);
-		pw.append(String.valueOf(unique_id++));		// we cant use the id field: since we are not using getEntityManager().persist()
-		pw.append('\t');
-		pw.append(String.valueOf(getLength()));
-		pw.append('\t');
-		pw.append(getSequenceID());
-		pw.append('\t');
-		pw.append(String.valueOf(getStart()));
-		pw.append('\t');
-		pw.println(String.valueOf(fasta.getID()));
+		pw.append(String.valueOf(unique_id++))		// we cant use the id field: since we are not using getEntityManager().persist()
+		  .append('\t').append(String.valueOf(getLength()))
+		  .append('\t').append(getSequenceID())
+		  .append('\t').append(String.valueOf(getStart()))
+	      .append('\t')
+		  .println(String.valueOf(fasta.getID()));
 	}
 }

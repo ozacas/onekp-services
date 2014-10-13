@@ -87,7 +87,7 @@ public class populateSequenceReferenceTable {
 			};
 			File[] proteomes      = protein_root.listFiles(fasta_filter);
 			File[] transcriptomes = transcriptome_root.listFiles(fasta_filter);
-
+			
 			DatasetDesignation dsd = new DatasetDesignation();
 			dsd.setLabel(dataset_root.getName());
 			dsd.setDescription("");
@@ -122,8 +122,16 @@ public class populateSequenceReferenceTable {
 				FastaPersistor trans = new FastaPersistor(transcript_files, SequenceType.RNA, log, pw);
 				int n_trans = trans.populateDatabase(getEntityManager(), dsd);
 				log.info("Processed "+n_trans+" RNA sequence records");
-				
 				pw.close();
+				
+				if (getPersistenceUnit().equals("seqdb_onekp_k25s")) {
+					if (proteomes.length != 1 || proteomes.length != transcriptomes.length) {
+						throw new Exception("Programmer error: k25s should have only file FASTA file per sequence type (AA,RNA)");
+					}
+				/*	if (n_prot != 107771813) {
+						throw new Exception("Expected to process 107771813 proteins, but processed: "+n_prot+" instead.");
+					}*/
+				}
 				trans.saveSequenceReferences(seq_ref_tsv, getEntityManager());
 				seq_ref_tsv.delete();
 			} catch (Exception e) {
