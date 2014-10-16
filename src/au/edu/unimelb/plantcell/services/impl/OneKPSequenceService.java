@@ -1,5 +1,7 @@
 package au.edu.unimelb.plantcell.services.impl;
 
+import java.io.IOException;
+
 import javax.persistence.EntityManager;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
@@ -24,6 +26,11 @@ public interface OneKPSequenceService {
 	 * @throws Exception
 	 */
 	public EntityManager validateDatabaseConnection() throws Exception;
+	
+	/**
+	 * validates a sequence ID as provided by the user. Throws if the ID is not valid.
+	 */
+	public void validateID(final String id) throws IOException;
 	
 	/**
 	 * Returns the protein sequence for the specified ID

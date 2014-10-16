@@ -25,6 +25,11 @@ import javax.persistence.Table;
 public class SequenceReference {
 	private static int unique_id = 1;
 	
+	/**
+	 * primary key. Must be numbered from one so that the row id matches the PK or the code will break. Each sequence for a sample must
+	 * be part of a single contiguous id block. For speed, we dont use the @GeneratedValue annotation here, we use a native query
+	 * to populate this very large table.
+	 */
 	@Id
 	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	private int id;

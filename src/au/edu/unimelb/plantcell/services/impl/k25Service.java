@@ -53,14 +53,15 @@ public class k25Service implements OneKPSequenceService {
 	 * @param id
 	 * @throws IOException
 	 */
-	private void validateID(final String id) throws IOException {
+	@Override
+	public void validateID(final String id) throws IOException {
 		if (!id.matches("^[A-Z]{4}_\\d+")) {
 			throw new IOException("Invalid 1KP ID: expected eg. ABCD_1234");
 		}
 		logger.info(id+" is valid.");
 	}
 	
-	private Response doGet(final String id, SequenceType[] sequence_types) {
+	protected Response doGet(final String id, SequenceType[] sequence_types) {
 		try {
 			validateID(id);
 			String onekp_sample_id = id.substring(0,4);

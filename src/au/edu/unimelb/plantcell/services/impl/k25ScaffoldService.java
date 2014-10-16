@@ -14,11 +14,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.lang.WordUtils;
-
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
-import au.edu.unimelb.plantcell.seqdb.SingleFastaDatasetQueries;
+import au.edu.unimelb.plantcell.seqdb.Queries;
 
 
 /**
@@ -32,7 +30,7 @@ import au.edu.unimelb.plantcell.seqdb.SingleFastaDatasetQueries;
 @Path("/k25s")
 @Stateless
 @Produces(MediaType.TEXT_PLAIN)
-public class k25ScaffoldService implements OneKPSequenceService {
+public class k25ScaffoldService extends k25Service {
 	private final static Logger logger = Logger.getLogger("k25sService");
 	
 	@PersistenceContext(unitName="seqdb_onekp_k25s")			// must match persistence.xml entry
@@ -61,36 +59,14 @@ public class k25ScaffoldService implements OneKPSequenceService {
 	 * @param id
 	 * @throws IOException
 	 */
-	private void validateID(final String id) throws IOException {
+	@Override
+	public void validateID(final String id) throws IOException {
 		if (!id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
 			throw new IOException("Invalid 1KP ID: expected eg. scaffold-ABCD-1234");
 		}
 		logger.info(id+" is valid.");
 	}	
 	
-	private Response doGet(final String id, SequenceType[] sequence_types) {
-		try {
-			validateID(id);
-			String seq_id = id.substring(5);
-			EntityManager em = validateDatabaseConnection();
-			SingleFastaDatasetQueries q = new SingleFastaDatasetQueries(em);
-			StringBuilder sb = new StringBuilder(10 * 1024);
-			for (SequenceType st : sequence_types) {
-				String entry = q.getSequence(seq_id, st);
-				if (entry != null) {
-					sb.append(q);
-					sb.append('\n');
-				} else {
-					logger.warning("No entry for "+st+" for ID: "+id);
-				}
-			}
-			logger.fine("Created result for "+seq_id);
-			return Response.ok(WordUtils.wrap(sb.toString(), 60, "\n", true)).build();
-		} catch (Exception e) {
-			//e.printStackTrace();
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-		}
-	}
 	
 	@GET
 	@Path("protein/{id}")
@@ -116,16 +92,20 @@ public class k25ScaffoldService implements OneKPSequenceService {
 		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
 
+	@GET
+	@Path("proteome/{sample}")
+	@RolesAllowed("1kp_user")
 	@Override
-	public Response getProteome(String onekp_sample_id) {
-		// TODO Auto-generated method stub
-		return null;
+	public Response getProteome(@PathParam("sample") final String onekp_sample_id) {
+		return super.getProteome(onekp_sample_id);
 	}
 
+	@GET
+	@Path("transcriptome/{sample}")
+	@RolesAllowed("1kp_user")
 	@Override
-	public Response getTranscriptome(String onekp_sample_id) {
-		// TODO Auto-generated method stub
-		return null;
+	public Response getTranscriptome(@PathParam("sample") final String onekp_sample_id) {
+		return super.getTranscriptome(onekp_sample_id);
 	}
 
 	@GET
@@ -135,12 +115,12 @@ public class k25ScaffoldService implements OneKPSequenceService {
 	public Response getSummary(@PathParam("sample") final String onekp_sample_id) {
 		try {
 			EntityManager em = validateDatabaseConnection();
-			SingleFastaDatasetQueries q = new SingleFastaDatasetQueries(em);
+			Queries q = new Queries(em);
 			if (q != null) {
 				logger.info("Constructed valid queries object.");
 			} 
-			int n_prots         = q.countSequencesInSample(onekp_sample_id, SequenceType.AA);
-			int n_transcripts   = q.countSequencesInSample(onekp_sample_id, SequenceType.RNA);
+			int n_prots         = q.countSequencesInFile(onekp_sample_id, SequenceType.AA);
+			int n_transcripts   = q.countSequencesInFile(onekp_sample_id, SequenceType.RNA);
 			SampleAnnotation sa = q.getSampleMetadata(onekp_sample_id);
 			
 			StringBuilder sb = new StringBuilder();
@@ -151,7 +131,7 @@ public class k25ScaffoldService implements OneKPSequenceService {
 			sb.append("Taxonomic order: "+sa.getOrder()+"\n");
 			sb.append("Taxonomic clade: "+sa.getClade()+"\n");
 			sb.append("Number of predicted proteins: "+n_prots+"\n");
-			sb.append("Number of assembled contigs: "+n_transcripts+"\n");
+			sb.append("Number of assembled scaffolds: "+n_transcripts+"\n");
 			return Response.ok(sb.toString()).build();
 		} catch (Exception e) {
 			logger.warning(e.getMessage());
