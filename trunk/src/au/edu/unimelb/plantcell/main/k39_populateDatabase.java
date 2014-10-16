@@ -20,12 +20,12 @@ import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.FastaPersistor;
 import au.edu.unimelb.plantcell.seqdb.SamplePersistor;
 
-public class populateSequenceReferenceTable {
+public class k39_populateDatabase {
 	private static EntityManagerFactory singleton;
 	private static EntityManager singleton_manager;
 	
 	private static String getPersistenceUnit() {
-		return "seqdb_onekp_k25s";
+		return "seqdb_onekp_k39";
 	}
 	
 	private static EntityManagerFactory getEntityManagerFactory() {
@@ -63,7 +63,7 @@ public class populateSequenceReferenceTable {
 
 			@Override
 			public boolean accept(File f) {
-				if (f.isDirectory() && f.getName().matches("^k\\d+s$")) {
+				if (f.isDirectory() && f.getName().matches("^k39$")) {
 					return true;
 				}
 				return false;
@@ -78,7 +78,7 @@ public class populateSequenceReferenceTable {
 				@Override
 				public boolean accept(File pathname) {
 					String name = pathname.getName();
-					if (pathname.canRead() && (name.endsWith(".fa") | name.endsWith(".fasta")) ) {
+					if (pathname.canRead() && (name.endsWith(".fa") || name.endsWith(".fasta")) ) {
 						return true;
 					}
 					return false;
@@ -123,15 +123,7 @@ public class populateSequenceReferenceTable {
 				int n_trans = trans.populateDatabase(getEntityManager(), dsd);
 				log.info("Processed "+n_trans+" RNA sequence records");
 				pw.close();
-				
-				if (getPersistenceUnit().equals("seqdb_onekp_k25s")) {
-					if (proteomes.length != 1 || proteomes.length != transcriptomes.length) {
-						throw new Exception("Programmer error: k25s should have only file FASTA file per sequence type (AA,RNA)");
-					}
-				/*	if (n_prot != 107771813) {
-						throw new Exception("Expected to process 107771813 proteins, but processed: "+n_prot+" instead.");
-					}*/
-				}
+			
 				trans.saveSequenceReferences(seq_ref_tsv, getEntityManager());
 				seq_ref_tsv.delete();
 			} catch (Exception e) {
