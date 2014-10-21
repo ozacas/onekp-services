@@ -46,15 +46,20 @@ public class FastaPersistor {
 		this.pw = pw;
 	}
 	
-	public void saveSequenceReferences(final File ref_file_to_read_from, final EntityManager em) throws Exception {
+	public void saveSequenceReferences(final File ref_file_to_read_from, 
+										final EntityManager em, final DatasetDesignation dsd) throws Exception {
+		assert(dsd != null && em != null && ref_file_to_read_from != null);
+		
 		// run native query to load database into SequenceReference table...
 		try {
 			logger.info("Loading sequence ref records into database");
 			em.getTransaction().begin();
 			String path = ref_file_to_read_from.getAbsolutePath();
 			path = path.replaceAll("\\\\", "/");
+			String table = dsd.getSeqRefTable();
 			Query q = em.createNativeQuery("load data local infile \'"+path+
-					"\' replace into table SEQUENCEREFERENCE fields terminated by '\\t' (id, length, SEQ_ID, start_offset, FASTA_ID);");
+					"\' replace into table "+table+" fields terminated by '\\t' (id, length, SEQ_ID, start, FASTAFILE_ID);");
+			logger.info("Persisting sequence references into "+table);
 			int ret = q.executeUpdate();
 			em.getTransaction().commit();
 			logger.info("Completed "+ret+" sequence references (rows) from "+files.size()+" fasta files.");

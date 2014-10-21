@@ -25,6 +25,7 @@ import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.FastaPersistor;
 import au.edu.unimelb.plantcell.seqdb.Queries;
 import au.edu.unimelb.plantcell.seqdb.SamplePersistor;
+import au.edu.unimelb.plantcell.services.impl.DummyOneKPService;
 
 
 public class MiniPopulationTest {
@@ -64,7 +65,7 @@ public class MiniPopulationTest {
 		}
 		
 		// verify that data has populated correctly
-		Queries q = new Queries(getEntityManager());
+		Queries q = new Queries(new DummyOneKPService());
 		int n_samples = q.countOneKPSamples();
 		assertEquals(1328, n_samples);
 		
@@ -81,7 +82,7 @@ public class MiniPopulationTest {
 	
 	@Test
 	public void populateDatabaseWithMiniFile() {		
-		Queries sr = new Queries(getEntityManager());
+		Queries sr = new Queries(new DummyOneKPService());
 
 		long n_datasets_before = sr.getNumberofDatasetDesignations(dsd.getLabel());
 		long n_fasta_before    = sr.getNumberOfFastaFiles(dsd.getLabel());
@@ -101,7 +102,7 @@ public class MiniPopulationTest {
 			File f2 = File.createTempFile("MinPopTest", "_seqref.tsv");
 			FastaPersistor fp = new FastaPersistor(files, SequenceType.AA, logger, new PrintWriter(f2));
 			int n = fp.populateDatabase(getEntityManager(), dsd);
-			fp.saveSequenceReferences(f2, getEntityManager());
+			fp.saveSequenceReferences(f2, getEntityManager(), dsd);
 			assertEquals(2, n);
 			f2.delete();
 		} catch (Exception e) {
@@ -143,7 +144,7 @@ public class MiniPopulationTest {
 			File f2 = File.createTempFile("MinPopTest", "_seqref.tsv");
 			FastaPersistor fp = new FastaPersistor(files, SequenceType.AA, logger, new PrintWriter(f2));
 			int n = fp.populateDatabase(getEntityManager(), dsd);
-			fp.saveSequenceReferences(f2, getEntityManager());
+			fp.saveSequenceReferences(f2, getEntityManager(), dsd);
 			assertEquals(269051, n);
 		} catch (Exception e) {
 			e.printStackTrace();

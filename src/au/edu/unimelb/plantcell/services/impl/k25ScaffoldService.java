@@ -6,7 +6,8 @@ import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -30,26 +31,27 @@ import au.edu.unimelb.plantcell.seqdb.Queries;
 @Path("/k25s")
 @Stateless
 @Produces(MediaType.TEXT_PLAIN)
-public class k25ScaffoldService extends k25Service {
+public class k25ScaffoldService extends OneKPSequenceService {
 	private final static Logger logger = Logger.getLogger("k25sService");
 	
-	@PersistenceContext(unitName="seqdb_onekp_k25s")			// must match persistence.xml entry
-	private EntityManager seqdb_onekp_k25s;
+	@PersistenceUnit(unitName="seqdb_onekp")			// must match persistence.xml entry
+	private EntityManagerFactory emf;
+
+	private static EntityManager seqdb_onekp;
 	
-	@Override
-	public EntityManager getEntityManager() {
-		assert(seqdb_onekp_k25s !=  null);
-		return seqdb_onekp_k25s;
+	@Override 
+	public String getDataset() {
+		return "k25s";
 	}
 	
 	@Override
-	public EntityManager validateDatabaseConnection() throws Exception {
-		EntityManager em = getEntityManager();
-		if (em == null) {
-			logger.warning("No database connection!");
-			throw new Exception("No database connection!");
+	public synchronized EntityManager getEntityManager() {
+		synchronized (emf) {
+			if (seqdb_onekp == null) {
+				seqdb_onekp = emf.createEntityManager();
+			}
+			return seqdb_onekp;
 		}
-		return em;
 	}
 	
 	/**
@@ -64,7 +66,7 @@ public class k25ScaffoldService extends k25Service {
 		if (!id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
 			throw new IOException("Invalid 1KP ID: expected eg. scaffold-ABCD-1234");
 		}
-		logger.info(id+" is valid.");
+		getLogger().info(id+" is valid.");
 	}	
 	
 	
@@ -73,8 +75,11 @@ public class k25ScaffoldService extends k25Service {
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getProtein(@PathParam("id") final String id) { 
-		logger.info("Getting protein id is: "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.AA });
+		Logger l = getLogger();
+		l.info("Getting protein id is: "+(id != null));
+		Response r = doGet(id, new SequenceType[] { SequenceType.AA });
+		l.info("Protein get completed.");
+		return r;
 	}
 	
 	@GET
@@ -82,14 +87,20 @@ public class k25ScaffoldService extends k25Service {
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getTranscript(@PathParam("id") final String id) {
-		logger.fine("Getting transcript contig id is: "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.RNA });
+		Logger l = getLogger();
+		l.fine("Getting transcript contig id is: "+(id != null));
+		Response r = doGet(id, new SequenceType[] { SequenceType.RNA });
+		l.info("Transcript get completed.");
+		return r;
 	}
 	
 	@Override
 	public Response getAll(String id) {
-		logger.fine("Getting all sequences for "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
+		Logger l = getLogger();
+		l.fine("Getting all sequences for "+(id != null));
+		Response r = doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
+		l.info("Get all completed.");
+		return r;
 	}
 
 	@GET
@@ -97,7 +108,7 @@ public class k25ScaffoldService extends k25Service {
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getProteome(@PathParam("sample") final String onekp_sample_id) {
-		return super.getProteome(onekp_sample_id);
+		return getSample(onekp_sample_id, SequenceType.AA);
 	}
 
 	@GET
@@ -105,7 +116,7 @@ public class k25ScaffoldService extends k25Service {
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getTranscriptome(@PathParam("sample") final String onekp_sample_id) {
-		return super.getTranscriptome(onekp_sample_id);
+		return getSample(onekp_sample_id, SequenceType.RNA);
 	}
 
 	@GET
@@ -114,10 +125,9 @@ public class k25ScaffoldService extends k25Service {
 	@Override
 	public Response getSummary(@PathParam("sample") final String onekp_sample_id) {
 		try {
-			EntityManager em = validateDatabaseConnection();
-			Queries q = new Queries(em);
+			Queries q = new Queries(this);
 			if (q != null) {
-				logger.info("Constructed valid queries object.");
+				getLogger().info("Constructed valid queries object.");
 			} 
 			int n_prots         = q.countSequencesInFile(onekp_sample_id, SequenceType.AA);
 			int n_transcripts   = q.countSequencesInFile(onekp_sample_id, SequenceType.RNA);
@@ -137,6 +147,11 @@ public class k25ScaffoldService extends k25Service {
 			logger.warning(e.getMessage());
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
 		}
+	}
+
+	@Override
+	public Logger getLogger() {
+		return logger;
 	}
 	
 }

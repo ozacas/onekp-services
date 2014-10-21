@@ -18,14 +18,15 @@ import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.FastaFile;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.FastaPersistor;
+import au.edu.unimelb.plantcell.seqdb.Queries;
 import au.edu.unimelb.plantcell.seqdb.SamplePersistor;
 
-public class k39_populateDatabase {
+public class populateDatabase {
 	private static EntityManagerFactory singleton;
 	private static EntityManager singleton_manager;
 	
 	private static String getPersistenceUnit() {
-		return "seqdb_onekp_k39";
+		return "seqdb_onekp";
 	}
 	
 	private static EntityManagerFactory getEntityManagerFactory() {
@@ -46,6 +47,7 @@ public class k39_populateDatabase {
 	public static void main(String[] args) {
 		// 1. first populate the sample metadata table
 		File f = new File("/tmp/1kp_sample_list_20140925.csv");
+		
 		SamplePersistor sp = new SamplePersistor();
 		Logger log = Logger.getLogger("OneKP");
 		
@@ -63,13 +65,33 @@ public class k39_populateDatabase {
 
 			@Override
 			public boolean accept(File f) {
-				if (f.isDirectory() && f.getName().matches("^k39$")) {
+				if (f.isDirectory() && f.getName().startsWith("k")) {
 					return true;
 				}
 				return false;
 			}
 			
 		});
+		
+		for (File dataset_root : datasets) {
+			log.info("Found dataset: "+dataset_root.getAbsolutePath());
+		}
+		try {
+			Thread.sleep(5 * 1000);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		
+		log.info("Deleting contents of Fasta file and sample annotation tables.");
+		Queries.emptyTables(getEntityManager());
+		log.info("Deletion complete.");
+		try {
+			Thread.sleep(5 * 1000);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
 		for (File dataset_root : datasets) {
 			File protein_root = new File(dataset_root, "proteomes");
 			File transcriptome_root = new File(dataset_root, "transcriptomes");
@@ -91,6 +113,8 @@ public class k39_populateDatabase {
 			DatasetDesignation dsd = new DatasetDesignation();
 			dsd.setLabel(dataset_root.getName());
 			dsd.setDescription("");
+			
+			log.info("Processing dataset: "+dsd.getLabel());
 			
 			List<FastaFile> protein_files = new ArrayList<FastaFile>();
 			for (File protfile : proteomes) {
@@ -124,13 +148,14 @@ public class k39_populateDatabase {
 				log.info("Processed "+n_trans+" RNA sequence records");
 				pw.close();
 			
-				trans.saveSequenceReferences(seq_ref_tsv, getEntityManager());
+				trans.saveSequenceReferences(seq_ref_tsv, getEntityManager(), dsd);
 				seq_ref_tsv.delete();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
 			
+			log.info("Population of datasets complete.");
 		}
 	}
 }
