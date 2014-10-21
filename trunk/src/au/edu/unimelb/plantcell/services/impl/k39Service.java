@@ -17,20 +17,20 @@ import javax.ws.rs.core.Response;
 
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 
-@Path("/k25")
+@Path("/k39")
 @Stateless
 @Produces(MediaType.TEXT_PLAIN)
-public class k25Service extends OneKPSequenceService {
-	private final static Logger logger = Logger.getLogger("k25Service");
+public class k39Service extends OneKPSequenceService {
+	private final static Logger logger = Logger.getLogger("k39Service");
 	
 	@PersistenceUnit(unitName="seqdb_onekp")			// must match persistence.xml entry
 	private EntityManagerFactory emf;
 	
-	private static EntityManager seqdb_onekp;
+	private EntityManager seqdb_onekp;
 	
 	@Override 
 	public String getDataset() {
-		return "k25";
+		return "k39";
 	}
 	
 	@Override
@@ -42,20 +42,10 @@ public class k25Service extends OneKPSequenceService {
 	public EntityManager getEntityManager() {
 		synchronized (emf) {
 			if (seqdb_onekp == null) {
-				seqdb_onekp = emf.createEntityManager();
+					seqdb_onekp = emf.createEntityManager();
 			}
 			return seqdb_onekp;
 		}
-	}
-	
-	@Override
-	public EntityManager validateDatabaseConnection() throws Exception {
-		EntityManager em = getEntityManager();
-		if (em == null) {
-			logger.warning("No database connection!");
-			throw new Exception("No database connection!");
-		}
-		return em;
 	}
 	
 	/**
@@ -67,8 +57,8 @@ public class k25Service extends OneKPSequenceService {
 	 */
 	@Override
 	public void validateID(final String id) throws IOException {
-		if (!id.matches("^[A-Z]{4}_\\d+")) {
-			throw new IOException("Invalid 1KP ID: expected eg. ABCD_1234");
+		if (!id.matches("^Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\.0-9]+_Length_\\d+_\\d+$")) {
+			throw new IOException("Invalid Oases assembly ID: expected eg. Locus_1_Transcript_4/13_Confidence_0.441_Length_2447_1");
 		}
 		logger.info(id+" is valid.");
 	}

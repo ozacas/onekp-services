@@ -2,15 +2,6 @@ package au.edu.unimelb.plantcell.jpa.dao;
 
 import java.io.PrintWriter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-
 
 /**
  * Refers to an entry in a single FASTA file, identified by a byte-offset and length.
@@ -20,8 +11,6 @@ import javax.persistence.Table;
  * @author acassin
  *
  */
-@Entity
-@Table(name="SEQUENCEREFERENCE")
 public class SequenceReference {
 	private static int unique_id = 1;
 	
@@ -30,17 +19,13 @@ public class SequenceReference {
 	 * be part of a single contiguous id block. For speed, we dont use the @GeneratedValue annotation here, we use a native query
 	 * to populate this very large table.
 	 */
-	@Id
-	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	private int id;
 	
-	@ManyToOne(fetch=FetchType.LAZY)
 	private FastaFile fasta;
 	
 	private long start_offset;	// byte offset from start of fasta file
 	private int  length;		// how many BYTES to read from the start offset
 		
-	@Column(name="SEQ_ID")
 	private String seqID;
 	
 	public FastaFile getFastaFile() {
@@ -95,5 +80,9 @@ public class SequenceReference {
 		  .append('\t').append(String.valueOf(getStart()))
 	      .append('\t')
 		  .println(String.valueOf(fasta.getID()));
+	}
+
+	public int getID() {
+		return id;
 	}
 }

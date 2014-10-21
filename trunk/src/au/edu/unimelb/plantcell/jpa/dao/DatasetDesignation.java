@@ -5,6 +5,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name="DATASETDESIGNATION")		// needed for OpenJPA, but not for EclipseLink
@@ -40,5 +41,25 @@ public class DatasetDesignation {
 	
 	public String getDescription() {
 		return description;
+	}
+
+	@Transient
+	public String getSeqRefTable() throws Exception {
+		String name = getLabel();
+		if (name.equals("k25")) {
+			return "K25_SEQREF";		// must match entity table name in corresponding DAO class
+		} else if (name.equals("k25s")) {
+			return "K25S_SEQREF";		// must match entity table name in corresponding DAO class
+		} else if (name.equals("k39")) {
+			return "K39_SEQREF";		// must match entity table name in corresponding DAO class
+		} else if (name.equals("K49")) {
+			return "K49_SEQREF";		// must match entity table name in corresponding DAO class
+		} else if (name.equals("K59")) {
+			return "K59_SEQREF";		// must match entity table name in corresponding DAO class
+		} else if (name.equals("K69")) {
+			return "K69_SEQREF";		// must match entity table name in corresponding DAO class
+		} else {
+			throw new Exception("Unknown and unsupported 1KP dataset designation: "+name);
+		}
 	}
 }

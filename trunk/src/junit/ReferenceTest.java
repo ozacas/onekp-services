@@ -20,6 +20,7 @@ import org.junit.Test;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.Queries;
+import au.edu.unimelb.plantcell.services.impl.DummyOneKPService;
 
 public class ReferenceTest {
 	private EntityManagerFactory singleton;
@@ -63,7 +64,7 @@ public class ReferenceTest {
 	
 	@Test
 	public void referenceTest() {
-		Queries q = new Queries(getEntityManager());
+		Queries q = new Queries(new DummyOneKPService());
 		
 		try {
 			File abcd = q.findFastaFile("ABCD", SequenceType.AA);
