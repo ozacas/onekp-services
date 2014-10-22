@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.FlushModeType;
 import javax.persistence.Persistence;
 
 import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
@@ -39,7 +38,6 @@ public class populateDatabase {
 	private static EntityManager getEntityManager() {
 		if (singleton_manager == null) {
 			singleton_manager = getEntityManagerFactory().createEntityManager();
-			singleton_manager.setFlushMode(FlushModeType.COMMIT);
 		}
 		return singleton_manager;
 	}
@@ -48,8 +46,13 @@ public class populateDatabase {
 		// 1. first populate the sample metadata table
 		File f = new File("/tmp/1kp_sample_list_20140925.csv");
 		
-		SamplePersistor sp = new SamplePersistor();
 		Logger log = Logger.getLogger("OneKP");
+		log.info("Removing content from all tables. Please wait, this may take a long time.");
+		Queries.emptyTables(getEntityManager());
+		log.info("Deletion complete.");
+		wait5seconds();
+		
+		SamplePersistor sp = new SamplePersistor();
 		
 		try {
 			int n = sp.persist1kpSamples(getEntityManager(), f);
@@ -76,39 +79,14 @@ public class populateDatabase {
 		for (File dataset_root : datasets) {
 			log.info("Found dataset: "+dataset_root.getAbsolutePath());
 		}
-		try {
-			Thread.sleep(5 * 1000);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		
-		log.info("Deleting contents of Fasta file and sample annotation tables.");
-		Queries.emptyTables(getEntityManager());
-		log.info("Deletion complete.");
-		try {
-			Thread.sleep(5 * 1000);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+		wait5seconds();
+	
 		for (File dataset_root : datasets) {
 			File protein_root = new File(dataset_root, "proteomes");
 			File transcriptome_root = new File(dataset_root, "transcriptomes");
-			FileFilter fasta_filter = new FileFilter() {
-
-				@Override
-				public boolean accept(File pathname) {
-					String name = pathname.getName();
-					if (pathname.canRead() && (name.endsWith(".fa") || name.endsWith(".fasta")) ) {
-						return true;
-					}
-					return false;
-				}
-				
-			};
-			File[] proteomes      = protein_root.listFiles(fasta_filter);
-			File[] transcriptomes = transcriptome_root.listFiles(fasta_filter);
+		
+			File[] proteomes      = protein_root.listFiles(newFileFilter());
+			File[] transcriptomes = transcriptome_root.listFiles(newFileFilter());
 			
 			DatasetDesignation dsd = new DatasetDesignation();
 			dsd.setLabel(dataset_root.getName());
@@ -157,5 +135,33 @@ public class populateDatabase {
 			
 			log.info("Population of datasets complete.");
 		}
+	}
+
+	private static void wait5seconds() {
+		try {
+			Thread.sleep(5 * 1000);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+	}
+
+	private static FileFilter newFileFilter() {
+		return new FileFilter() {
+			private int added = 0;
+			private int max = 10000;
+			@Override
+			public boolean accept(File pathname) {
+				String name = pathname.getName();
+				if (pathname.canRead() && (name.endsWith(".fa") || name.endsWith(".fasta")) ) {
+					added++;
+					if (added > max) {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			}
+			
+		};
 	}
 }

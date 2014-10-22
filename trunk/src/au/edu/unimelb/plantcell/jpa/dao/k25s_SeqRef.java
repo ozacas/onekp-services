@@ -14,7 +14,7 @@ import javax.persistence.Transient;
 @Entity
 @Table(name="K25S_SEQREF")
 @Access(value=AccessType.PROPERTY)
-public class k25s_SeqRef {
+public class k25s_SeqRef implements SequenceReferenceInterface {
 
 	@Transient
 	private SequenceReference sr;
@@ -29,43 +29,52 @@ public class k25s_SeqRef {
 	}
 	
 	@Id
+	@Override
 	public int getID() {
 		return sr.getID();
 	}
 	
 	@Basic
+	@Override
 	public int getLength() {
 		return sr.getLength();
 	}
 	
+	@Override
 	public void setLength(final int new_length) {
 		sr.setLength(new_length);
 	}
 	
 	@Basic
+	@Override
 	public long getStart() {
 		return sr.getStart();
 	}
 	
+	@Override
 	public void setStart(final long new_start) {
 		sr.setStart(new_start);
 	}
 	
 	@Basic(optional=false)
 	@Column(name="SEQ_ID")
+	@Override
 	public String getSequenceID() {
 		return sr.getSequenceID();
 	}
 	
+	@Override
 	public void setSequenceID(final String new_id) {
 		sr.setSequenceID(new_id);
 	}
 	
 	@ManyToOne(fetch=FetchType.LAZY)
+	@Override
 	public FastaFile getFastaFile() {
 		return sr.getFastaFile();
 	}
 	
+	@Override
 	public void setFastaFile(final FastaFile ff) {
 		sr.setFastaFile(ff);
 	}

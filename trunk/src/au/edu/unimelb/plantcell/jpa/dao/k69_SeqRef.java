@@ -12,18 +12,18 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 
 @Entity
-@Table(name="K25_SEQREF")
+@Table(name="K69_SEQREF")
 @Access(value=AccessType.PROPERTY)
-public class k25_SeqRef implements SequenceReferenceInterface {
+public class k69_SeqRef implements SequenceReferenceInterface {
 
 	@Transient
 	private SequenceReference sr;
 	
-	public k25_SeqRef() {
+	public k69_SeqRef() {
 		sr = new SequenceReference();
 	}
 	
-	public k25_SeqRef(final SequenceReference sr) {
+	public k69_SeqRef(final SequenceReference sr) {
 		assert(sr != null);
 		this.sr = sr;
 	}

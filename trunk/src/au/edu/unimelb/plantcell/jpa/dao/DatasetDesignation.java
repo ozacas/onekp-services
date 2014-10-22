@@ -52,11 +52,11 @@ public class DatasetDesignation {
 			return "K25S_SEQREF";		// must match entity table name in corresponding DAO class
 		} else if (name.equals("k39")) {
 			return "K39_SEQREF";		// must match entity table name in corresponding DAO class
-		} else if (name.equals("K49")) {
+		} else if (name.equals("k49")) {
 			return "K49_SEQREF";		// must match entity table name in corresponding DAO class
-		} else if (name.equals("K59")) {
+		} else if (name.equals("k59")) {
 			return "K59_SEQREF";		// must match entity table name in corresponding DAO class
-		} else if (name.equals("K69")) {
+		} else if (name.equals("k69")) {
 			return "K69_SEQREF";		// must match entity table name in corresponding DAO class
 		} else {
 			throw new Exception("Unknown and unsupported 1KP dataset designation: "+name);

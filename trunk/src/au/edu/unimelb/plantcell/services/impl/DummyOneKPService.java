@@ -3,7 +3,10 @@ package au.edu.unimelb.plantcell.services.impl;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 import javax.ws.rs.core.Response;
 
 /**
@@ -13,12 +16,18 @@ import javax.ws.rs.core.Response;
  * @author acassin
  *
  */
+@Stateless
 public class DummyOneKPService extends OneKPSequenceService {
 	private final static Logger logger = Logger.getLogger("DummyOneKPService");
 	
+	@PersistenceUnit(unitName="seqdb_onekp")			// must match persistence.xml entry
+	private EntityManagerFactory emf;
+	
+	private static EntityManager seqdb_onekp = null;
+	
 	@Override
 	public String getDataset() {
-		return "dummy";
+		return "k25";
 	}
 
 	@Override
@@ -28,7 +37,12 @@ public class DummyOneKPService extends OneKPSequenceService {
 
 	@Override
 	public EntityManager getEntityManager() {
-		return null;
+		synchronized (emf) {
+			if (seqdb_onekp == null) {
+				seqdb_onekp = emf.createEntityManager();
+			}
+			return seqdb_onekp;
+		}
 	}
 
 	@Override

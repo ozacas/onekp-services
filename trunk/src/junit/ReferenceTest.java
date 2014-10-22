@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
+import au.edu.unimelb.plantcell.jpa.dao.k25_SeqRef;
 import au.edu.unimelb.plantcell.seqdb.Queries;
 import au.edu.unimelb.plantcell.services.impl.DummyOneKPService;
 
@@ -44,7 +45,7 @@ public class ReferenceTest {
 		return singleton_manager;
 	}
 	
-	public String getSequence(final SequenceReference sr, final File f) throws IOException {
+	public String getSequence(final k25_SeqRef sr, final File f) throws IOException {
 		RandomAccessFile raf = null;
 		try {
 			raf = new RandomAccessFile(f, "r");
@@ -74,11 +75,11 @@ public class ReferenceTest {
 			assertEquals("/1kp/4website/k25/proteomes/ABCD-SOAPdenovo-Trans-assembly.prots.out.fa", abcd.getAbsolutePath());
 			
 			// check the first, last and a couple of randomly chosen proteins for correct sequence
-			SequenceReference first_seq = q.getSequenceReference("ABCD", "1");
+			k25_SeqRef first_seq = (k25_SeqRef) q.getSequenceReference("ABCD", "1");
 			assertNotNull(first_seq);
 			log.info("Resolved ABCD_"+first_seq.getSequenceID());
-			SequenceReference last_seq  = q.getSequenceReference("ABCD", "78577");
-			SequenceReference rand1_seq = q.getSequenceReference("ABCD", "9731");
+			k25_SeqRef last_seq  = (k25_SeqRef) q.getSequenceReference("ABCD", "78577");
+			k25_SeqRef rand1_seq = (k25_SeqRef) q.getSequenceReference("ABCD", "9731");
 			assertNotNull(last_seq);
 			assertNotNull(rand1_seq);
 			
