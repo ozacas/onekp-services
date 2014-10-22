@@ -5,14 +5,18 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
+import org.apache.openjpa.persistence.PersistenceException;
+
 import au.edu.unimelb.plantcell.jpa.dao.FastaFile;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
+import au.edu.unimelb.plantcell.jpa.dao.SequenceReferenceInterface;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.services.impl.OneKPSequenceService;
 
@@ -29,9 +33,23 @@ public class Queries {
 		this.service = srv;
 	}
 	
-	public String getSeqRefTable() {
+	public String getSeqRefEntityName() {
 		String ds = service.getDataset().toUpperCase();
-		return ds+"_SEQREF";
+		if (ds.equals("K25")) {
+			return "k25_SeqRef";
+		} else if (ds.equals("K25S")) {
+			return "k25s_SeqRef";
+		} else if (ds.equals("K39")) {
+			return "k39_SeqRef";
+		} else if (ds.equals("K49")) {
+			return "k49_SeqRef";
+		} else if (ds.equals("K59")) {
+			return "k59_SeqRef";
+		} else if (ds.equals("K69")) {
+			return "k69_SeqRef";
+		} else {
+			return "";
+		}
 	}
 	
 	public static void emptyFastaFileTable(final EntityManager em) {
@@ -58,7 +76,7 @@ public class Queries {
 			return null;
 		}
 		FastaFile ff = fastas.get(0);
-		q = em.createQuery("select sr from "+getSeqRefTable()+" sr where sr.fasta = :fasta AND sr.seqID = :seqID");
+		q = em.createQuery("select sr from "+getSeqRefEntityName()+" sr where sr.fasta = :fasta AND sr.seqID = :seqID");
 		q.setParameter("fasta", ff);
 		q.setParameter("seqID", seqID);
 		SequenceReference sr = (SequenceReference) q.getSingleResult();
@@ -114,7 +132,12 @@ public class Queries {
 		q.setParameter("fastaFilePath", ff.getPath());
 		try {
 			List<FastaFile> fastas =  q.getResultList();
-			q = em.createQuery("select count(sr.id) from "+getSeqRefTable()+" sr where sr.fasta = :fasta");
+			if (fastas.size() != 1) {
+				Logger logger = service.getLogger();
+				logger.warning("Did not get the expected number of FASTA files for "+ff.getPath());
+				logger.warning("Expected 1 file, but got "+fastas.size());
+			}
+			q = em.createQuery("select count(sr.sequenceID) from "+getSeqRefEntityName()+" sr where sr.fastaFile = :fasta");
 			q.setParameter("fasta", fastas.get(0));
 			return ((Long) q.getSingleResult()).intValue();
 		} catch (NoResultException nre) {
@@ -122,7 +145,7 @@ public class Queries {
 		}
 	}
 	
-	public int countSequencesInFile(final String onekp_sample_id, final SequenceType st) throws NoResultException {
+	public int countSequencesInSample(final String onekp_sample_id, final SequenceType st) throws NoResultException {
 		EntityManager em = service.getEntityManager();
 		Query q = em.createQuery("select ff from FastaFile ff where ff.onekp_sample_id = :id AND ff.sequence_type = :st");
 		q.setParameter("id", onekp_sample_id);
@@ -156,18 +179,18 @@ public class Queries {
 		return new File((String) q.getSingleResult());
 	}
 	
-	public Object getSequenceReference(String onekp_sample_id, String seq_id) throws NoResultException {
+	public SequenceReferenceInterface getSequenceReference(String onekp_sample_id, String seq_id) throws NoResultException {
 		return getSequenceReference(onekp_sample_id, seq_id, SequenceType.AA);
 	}
 
-	public Object getSequenceReference(String onekp_sample_id, String seq_id, SequenceType st) throws NoResultException {
+	public SequenceReferenceInterface getSequenceReference(String onekp_sample_id, String seq_id, SequenceType st) throws NoResultException {
 		assert(onekp_sample_id != null && onekp_sample_id.length() == 4 && seq_id != null && seq_id.length() > 0);
-		Query q = service.getEntityManager().createQuery("select sr from "+getSeqRefTable()+" sr, FastaFile f "+
+		Query q = service.getEntityManager().createQuery("select sr from "+getSeqRefEntityName()+" sr, FastaFile f "+
 						"where f.onekp_sample_id = :id and f.sequence_type = :st and sr.fasta.id = f.id and sr.seqID = :seq_id");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
 		q.setParameter("seq_id", seq_id);
-		return q.getSingleResult();
+		return (SequenceReferenceInterface) q.getSingleResult();
 	}
 
 	public SampleAnnotation getSampleMetadata(final String onekp_sample_id) throws NoResultException {
@@ -177,7 +200,33 @@ public class Queries {
 	}
 
 	public static void emptyTables(final EntityManager em) {
+		em.getTransaction().begin();
 		emptySampleTable(em);
 		emptyFastaFileTable(em);
+		emptyDatasetDesignationTable(em);
+		em.getTransaction().commit();
+
+		for (String s : new String[] { "K25_SEQREF", "K25S_SEQREF", "K39_SEQREF", "K49_SEQREF", "K59_SEQREF", "K69_SEQREF" }) {
+			emptySequenceReferenceTable(em, s);
+		}
+	}
+
+	private static void emptySequenceReferenceTable(final EntityManager em, final String s) {
+		em.getTransaction().begin();
+		try {
+			@SuppressWarnings("unused")
+			int row_cnt = em.createNativeQuery("truncate table "+s).executeUpdate();
+			em.getTransaction().commit();
+		} catch (PersistenceException pe) {
+			em.getTransaction().rollback();
+			// NO-OP: be silent as missing/empty tables are not a problem
+		}
+	}
+
+	private static void emptyDatasetDesignationTable(final EntityManager em) {
+		assert(em != null);
+		Query q = em.createQuery("delete from DatasetDesignation");
+		@SuppressWarnings("unused")
+		int row_cnt = q.executeUpdate();
 	}
 }

@@ -45,8 +45,8 @@ public abstract class OneKPSequenceService {
 			if (q != null) {
 				logger.info("Constructed valid queries object.");
 			} 
-			int n_prots = q.countSequencesInFile(onekp_sample_id, SequenceType.AA);
-			int n_transcripts = q.countSequencesInFile(onekp_sample_id, SequenceType.RNA);
+			int n_prots = q.countSequencesInSample(onekp_sample_id, SequenceType.AA);
+			int n_transcripts = q.countSequencesInSample(onekp_sample_id, SequenceType.RNA);
 			SampleAnnotation sa = q.getSampleMetadata(onekp_sample_id);
 			
 			StringBuilder sb = new StringBuilder();
