@@ -139,16 +139,21 @@ public class Queries {
 	@SuppressWarnings("unchecked")
 	public int countSequencesInFile(final FastaFile ff) throws NoResultException {
 		EntityManager em = service.getEntityManager();
+		Logger logger = service.getLogger();
 		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath");
 		q.setParameter("fastaFilePath", ff.getPath());
 		try {
 			List<FastaFile> fastas =  q.getResultList();
-			if (fastas.size() != 1) {
-				Logger logger = service.getLogger();
+			if (fastas.size() > 1) {
 				logger.warning("Did not get the expected number of FASTA files for "+ff.getPath());
 				logger.warning("Expected 1 file, but got "+fastas.size());
+				// FALLTHRU anyway...
+			} else if (fastas.size() < 1) {
+				throw new NoResultException("No fasta files found for: "+ff.getPath());
 			}
-			q = em.createQuery("select count(sr.sequenceID) from "+getSeqRefEntityName()+" sr where sr.fastaFile = :fasta");
+			String table = getSeqRefEntityName();
+			logger.info("Searching table "+table+" for references to sequences in "+ff.getPath());
+			q = em.createQuery("select count(sr.sequenceID) from "+table+" sr where sr.fastaFile = :fasta");
 			q.setParameter("fasta", fastas.get(0));
 			return ((Long) q.getSingleResult()).intValue();
 		} catch (NoResultException nre) {
@@ -158,14 +163,19 @@ public class Queries {
 	
 	public int countSequencesInSample(final String onekp_sample_id, final SequenceType st) throws NoResultException {
 		EntityManager em = service.getEntityManager();
+		String dsd_label = getDesignation().getLabel();
+		Logger l = service.getLogger();
+		l.info("dsd label is "+dsd_label);
+		l.info("onekp sample id is "+onekp_sample_id);
 		Query q = em.createQuery("select ff from FastaFile ff where "+
 							"ff.onekp_sample_id = :id AND ff.sequence_type = :st and ff.dsd.label = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
-		q.setParameter("dsd", getDesignation().getLabel());
+		q.setParameter("dsd", dsd_label);
 		
 		// will throw if no result, so no need to check for ff == null
 		FastaFile ff = (FastaFile) q.getSingleResult();
+		l.info("Got fasta file "+ff.getPath());
 		return countSequencesInFile(ff);
 	}
 	
@@ -245,5 +255,27 @@ public class Queries {
 		Query q = em.createQuery("delete from DatasetDesignation");
 		@SuppressWarnings("unused")
 		int row_cnt = q.executeUpdate();
+	}
+
+	/**
+	 * Returns the datasets which provide 
+	 * @param onekp_sample_id
+	 * @param st
+	 * @return
+	 */
+	public String getDatasetsAsString(final String onekp_sample_id, final SequenceType st) throws NoResultException {
+		StringBuilder sb = new StringBuilder();
+		EntityManager em = service.getEntityManager();
+		Query q = em.createQuery("select distinct(dsd.label) from FastaFile ff, DatasetDesignation dsd where "+
+					"ff.dsd.id = dsd.id and ff.onekp_sample_id = :sample and ff.sequence_type = :st order by dsd.label");
+		q.setParameter("sample", onekp_sample_id);
+		q.setParameter("st", st);
+		@SuppressWarnings("unchecked")
+		List<String> datasets = q.getResultList();
+		for (String s : datasets) {
+			sb.append(s);
+			sb.append(' ');
+		}
+		return sb.toString().trim();
 	}
 }
