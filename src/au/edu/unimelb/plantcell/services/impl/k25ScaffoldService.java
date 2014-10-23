@@ -143,10 +143,14 @@ public class k25ScaffoldService extends OneKPSequenceService {
 			sb.append("Taxonomic clade: "+sa.getClade()+"\n");
 			sb.append("Number of predicted proteins: "+n_prots+"\n");
 			sb.append("Number of assembled scaffolds: "+n_transcripts+"\n");
+			sb.append("Available in datasets (AA): "+q.getDatasetsAsString(onekp_sample_id, SequenceType.AA)+"\n");
+			sb.append("Available in datasets (DNA): "+q.getDatasetsAsString(onekp_sample_id, SequenceType.RNA)+"\n");
 			return Response.ok(sb.toString()).build();
 		} catch (Exception e) {
 			logger.warning(e.getMessage());
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+			String msg = "ERROR: no results available for "+onekp_sample_id+" in dataset "+this.getDesignation().getLabel()+"\n"+
+						 "       detailed error message is: "+e.getMessage()+"\n";
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(msg).build();
 		}
 	}
 
