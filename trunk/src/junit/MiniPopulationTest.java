@@ -85,7 +85,7 @@ public class MiniPopulationTest {
 		Queries sr = new Queries(new DummyOneKPService());
 
 		long n_datasets_before = sr.getNumberofDatasetDesignations(dsd.getLabel());
-		long n_fasta_before    = sr.getNumberOfFastaFiles(dsd.getLabel());
+		long n_fasta_before    = sr.getNumberOfFastaFilesInDataset(dsd.getLabel());
 		
 		// chosen file has two sequences in it, we test for that below...
 		File f = new File("/home/acassin/test/chlamy_tplate_complex/from-tset-paper/ttray2.unaligned.fasta");
@@ -126,7 +126,7 @@ public class MiniPopulationTest {
 		
 		// check that datasetdesignation & fastafile tables have been populated
 		assertEquals(sr.getNumberofDatasetDesignations(dsd.getLabel()), n_datasets_before+1);
-		assertEquals(sr.getNumberOfFastaFiles(dsd.getLabel()), n_fasta_before+1);
+		assertEquals(sr.getNumberOfFastaFilesInDataset(dsd.getLabel()), n_fasta_before+1);
 	}
 	
 	@Test
