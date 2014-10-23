@@ -42,7 +42,7 @@ public class fixOneKPSampleIDs {
 			return singleton_manager;
 		}
 	
-		public static void fixOnekPSampleIDs(String[] args) {
+		public static void main(String[] args) {
 			Logger l = Logger.getLogger("fixOneKPSamples");
 			EntityManager em = getEntityManager();
 			

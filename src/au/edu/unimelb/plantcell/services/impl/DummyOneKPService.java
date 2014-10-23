@@ -9,6 +9,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 import javax.ws.rs.core.Response;
 
+import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
+
 /**
  * A dummy implementation only for test cases... so that it can invoke the Queries instance using
  * this class as the constructor parameter.
@@ -26,8 +28,8 @@ public class DummyOneKPService extends OneKPSequenceService {
 	private static EntityManager seqdb_onekp = null;
 	
 	@Override
-	public String getDataset() {
-		return "k25";
+	public DatasetDesignation getDesignation() {
+		return new DatasetDesignation("k25", "");
 	}
 
 	@Override

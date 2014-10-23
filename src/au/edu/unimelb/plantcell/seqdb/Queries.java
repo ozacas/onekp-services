@@ -79,9 +79,9 @@ public class Queries {
 	@SuppressWarnings("unchecked")
 	public String getSequence(final File fasta_file, final String seqID) {
 		EntityManager em = service.getEntityManager();
-		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath and ff.dsd = :dsd");
+		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath and ff.dsd.label = :dsd");
 		q.setParameter("fastaFilePath", fasta_file.getAbsolutePath());
-		q.setParameter("dsd", getDesignation());
+		q.setParameter("dsd", getDesignation().getLabel());
 		List<FastaFile> fastas = q.getResultList();
 		if (fastas.size() < 1) {
 			return null;
@@ -158,10 +158,11 @@ public class Queries {
 	
 	public int countSequencesInSample(final String onekp_sample_id, final SequenceType st) throws NoResultException {
 		EntityManager em = service.getEntityManager();
-		Query q = em.createQuery("select ff from FastaFile ff where ff.onekp_sample_id = :id AND ff.sequence_type = :st and ff.dsd = :dsd");
+		Query q = em.createQuery("select ff from FastaFile ff where "+
+							"ff.onekp_sample_id = :id AND ff.sequence_type = :st and ff.dsd.label = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
-		q.setParameter("dsd", getDesignation());
+		q.setParameter("dsd", getDesignation().getLabel());
 		
 		// will throw if no result, so no need to check for ff == null
 		FastaFile ff = (FastaFile) q.getSingleResult();
@@ -185,10 +186,10 @@ public class Queries {
 	public File findFastaFile(String onekp_sample_id, SequenceType st) throws NoResultException {
 		assert(onekp_sample_id != null && onekp_sample_id.length() == 4 && st != null);
 		Query q = service.getEntityManager().createQuery("select f.path from FastaFile f "+
-					"where f.onekp_sample_id = :id and f.sequence_type = :st and f.dsd = :dsd");
+					"where f.onekp_sample_id = :id and f.sequence_type = :st and f.dsd.label = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
-		q.setParameter("dsd", getDesignation());
+		q.setParameter("dsd", getDesignation().getLabel());
 		
 		return new File((String) q.getSingleResult());
 	}
@@ -201,11 +202,11 @@ public class Queries {
 		assert(onekp_sample_id != null && onekp_sample_id.length() == 4 && seq_id != null && seq_id.length() > 0);
 		Query q = service.getEntityManager().createQuery("select sr from "+getSeqRefEntityName()+" sr, FastaFile f "+
 						"where f.onekp_sample_id = :id and f.sequence_type = :st and "+
-						"sr.fasta.id = f.id and sr.seqID = :seq_id and f.dsd = :dsd");
+						"sr.fasta.id = f.id and sr.seqID = :seq_id and f.dsd.label = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
 		q.setParameter("seq_id", seq_id);
-		q.setParameter("dsd", getDesignation());
+		q.setParameter("dsd", getDesignation().getLabel());
 		return (SequenceReferenceInterface) q.getSingleResult();
 	}
 
