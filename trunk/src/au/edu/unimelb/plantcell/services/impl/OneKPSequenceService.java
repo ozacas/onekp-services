@@ -10,6 +10,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang.WordUtils;
 
+import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.seqdb.Queries;
@@ -27,7 +28,7 @@ public abstract class OneKPSequenceService {
 	 * Must return the database ID which the service requires access to
 	 * @return one of k25, k25s, k39, k49, k59 or k69
 	 */
-	public abstract String getDataset();
+	public abstract DatasetDesignation getDesignation();
 	
 	/**
 	 * Must not return null

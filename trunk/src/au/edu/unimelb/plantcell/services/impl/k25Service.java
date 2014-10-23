@@ -15,6 +15,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 
 @Path("/k25")
@@ -29,8 +30,8 @@ public class k25Service extends OneKPSequenceService {
 	private static EntityManager seqdb_onekp;
 	
 	@Override 
-	public String getDataset() {
-		return "k25";
+	public DatasetDesignation getDesignation() {
+		return new DatasetDesignation("k25", "");
 	}
 	
 	@Override

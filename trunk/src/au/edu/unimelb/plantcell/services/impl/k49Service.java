@@ -15,13 +15,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 
 @Path("/k49")
 @Stateless
 @Produces(MediaType.TEXT_PLAIN)
 public class k49Service extends OneKPSequenceService {
-	private final static Logger logger = Logger.getLogger("k39Service");
+	private final static Logger logger = Logger.getLogger("k49Service");
 
 	@PersistenceUnit(unitName="seqdb_onekp")			// must match persistence.xml entry
 	private EntityManagerFactory emf;
@@ -30,8 +31,8 @@ public class k49Service extends OneKPSequenceService {
 	
 	
 	@Override
-	public String getDataset() {
-		return "k49";
+	public DatasetDesignation getDesignation() {
+		return new DatasetDesignation("k49", "");
 	}
 	
 	@Override
