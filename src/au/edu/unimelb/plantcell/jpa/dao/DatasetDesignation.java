@@ -20,6 +20,7 @@ public class DatasetDesignation {
 	
 	
 	public DatasetDesignation() {
+		this("placeholder", "");
 	}
 	
 	public DatasetDesignation(String label, String description) {

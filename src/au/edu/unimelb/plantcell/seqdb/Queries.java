@@ -13,6 +13,7 @@ import javax.persistence.Query;
 
 import org.apache.openjpa.persistence.PersistenceException;
 
+import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.FastaFile;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
@@ -28,13 +29,22 @@ import au.edu.unimelb.plantcell.services.impl.OneKPSequenceService;
 public class Queries {
 	private OneKPSequenceService service;
 	
+	/**
+	 * Sole constructor. Specifies the dataset the queries are to operate on
+	 * @param srv
+	 * @param dsd
+	 */
 	public Queries(final OneKPSequenceService srv) {
 		assert(srv != null);
 		this.service = srv;
 	}
 	
+	private DatasetDesignation getDesignation() {
+		return service.getDesignation();
+	}
+	
 	public String getSeqRefEntityName() {
-		String ds = service.getDataset().toUpperCase();
+		String ds = service.getDesignation().getLabel().toUpperCase();
 		if (ds.equals("K25")) {
 			return "k25_SeqRef";
 		} else if (ds.equals("K25S")) {
@@ -69,8 +79,9 @@ public class Queries {
 	@SuppressWarnings("unchecked")
 	public String getSequence(final File fasta_file, final String seqID) {
 		EntityManager em = service.getEntityManager();
-		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath");
+		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath and ff.dsd = :dsd");
 		q.setParameter("fastaFilePath", fasta_file.getAbsolutePath());
+		q.setParameter("dsd", getDesignation());
 		List<FastaFile> fastas = q.getResultList();
 		if (fastas.size() < 1) {
 			return null;
@@ -147,9 +158,10 @@ public class Queries {
 	
 	public int countSequencesInSample(final String onekp_sample_id, final SequenceType st) throws NoResultException {
 		EntityManager em = service.getEntityManager();
-		Query q = em.createQuery("select ff from FastaFile ff where ff.onekp_sample_id = :id AND ff.sequence_type = :st");
+		Query q = em.createQuery("select ff from FastaFile ff where ff.onekp_sample_id = :id AND ff.sequence_type = :st and ff.dsd = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
+		q.setParameter("dsd", getDesignation());
 		
 		// will throw if no result, so no need to check for ff == null
 		FastaFile ff = (FastaFile) q.getSingleResult();
@@ -163,7 +175,7 @@ public class Queries {
 		return (long) q.getSingleResult();
 	}
 
-	public long getNumberOfFastaFiles(String dsd_label) throws NoResultException {
+	public long getNumberOfFastaFilesInDataset(String dsd_label) throws NoResultException {
 		Query q = service.getEntityManager().createQuery("select count(f.id) from DatasetDesignation dsd, FastaFile f where dsd.label = :l AND f.dsd.id = dsd.id");
 		q.setParameter("l", dsd_label);
 		
@@ -172,9 +184,11 @@ public class Queries {
 
 	public File findFastaFile(String onekp_sample_id, SequenceType st) throws NoResultException {
 		assert(onekp_sample_id != null && onekp_sample_id.length() == 4 && st != null);
-		Query q = service.getEntityManager().createQuery("select f.path from FastaFile f where f.onekp_sample_id = :id and f.sequence_type = :st");
+		Query q = service.getEntityManager().createQuery("select f.path from FastaFile f "+
+					"where f.onekp_sample_id = :id and f.sequence_type = :st and f.dsd = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
+		q.setParameter("dsd", getDesignation());
 		
 		return new File((String) q.getSingleResult());
 	}
@@ -186,10 +200,12 @@ public class Queries {
 	public SequenceReferenceInterface getSequenceReference(String onekp_sample_id, String seq_id, SequenceType st) throws NoResultException {
 		assert(onekp_sample_id != null && onekp_sample_id.length() == 4 && seq_id != null && seq_id.length() > 0);
 		Query q = service.getEntityManager().createQuery("select sr from "+getSeqRefEntityName()+" sr, FastaFile f "+
-						"where f.onekp_sample_id = :id and f.sequence_type = :st and sr.fasta.id = f.id and sr.seqID = :seq_id");
+						"where f.onekp_sample_id = :id and f.sequence_type = :st and "+
+						"sr.fasta.id = f.id and sr.seqID = :seq_id and f.dsd = :dsd");
 		q.setParameter("id", onekp_sample_id);
 		q.setParameter("st", st);
 		q.setParameter("seq_id", seq_id);
+		q.setParameter("dsd", getDesignation());
 		return (SequenceReferenceInterface) q.getSingleResult();
 	}
 
