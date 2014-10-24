@@ -86,8 +86,13 @@ public abstract class OneKPSequenceService {
 			for (SequenceType st : sequence_types) {
 				File     f = q.findFastaFile(onekp_sample_id, st);
 				if (f != null) {
-					sb.append(q.getSequence(f, seq_id));
-					sb.append('\n');
+					String result = q.getSequence(f, seq_id);
+					if (result != null) {
+						sb.append(result);
+						sb.append('\n');
+					} else {
+						logger.warning("Got no result for "+seq_id+" "+getDesignation().getLabel());
+					}
 				} else {
 					logger.warning("Could not locate FASTA file for ("+st+"): "+onekp_sample_id);
 				}
@@ -95,7 +100,7 @@ public abstract class OneKPSequenceService {
 			logger.fine("Created result for "+seq_id);
 			return Response.ok(WordUtils.wrap(sb.toString(), 60, "\n", true)).build();
 		} catch (Exception e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
 		}
 	}
