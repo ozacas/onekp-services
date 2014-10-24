@@ -16,7 +16,6 @@ import org.apache.openjpa.persistence.PersistenceException;
 import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.FastaFile;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
-import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceReferenceInterface;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.services.impl.OneKPSequenceService;
@@ -77,25 +76,36 @@ public class Queries {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public String getSequence(final File fasta_file, final String seqID) {
+	public String getSequence(final File fasta_file, final String seqID) throws IOException, NoResultException {
 		EntityManager em = service.getEntityManager();
 		Query q = em.createQuery("select ff from FastaFile ff where ff.path = :fastaFilePath and ff.dsd.label = :dsd");
 		q.setParameter("fastaFilePath", fasta_file.getAbsolutePath());
-		q.setParameter("dsd", getDesignation().getLabel());
+		String dsd = getDesignation().getLabel();
+		q.setParameter("dsd", dsd);
 		List<FastaFile> fastas = q.getResultList();
+		Logger l = service.getLogger();
+		l.info("Found "+fastas.size()+" fasta files for "+dsd+" - "+seqID);
 		if (fastas.size() < 1) {
 			return null;
 		}
 		FastaFile ff = fastas.get(0);
-		q = em.createQuery("select sr from "+getSeqRefEntityName()+" sr where sr.fasta = :fasta AND sr.seqID = :seqID");
-		q.setParameter("fasta", ff);
+		String entity = getSeqRefEntityName();
+		l.info("Fetching record from "+entity);
+		q = em.createQuery("select sr from "+entity+" sr where sr.fastaFile.id = :fasta AND sr.sequenceID = :seqID");
+		q.setParameter("fasta", ff.getID());
 		q.setParameter("seqID", seqID);
-		SequenceReference sr = (SequenceReference) q.getSingleResult();
-		if (sr == null) {
-			return null;
+		SequenceReferenceInterface sr;
+		try {
+			sr = (SequenceReferenceInterface) q.getSingleResult();
+			l.info("Fetched single record for "+seqID);
+		} catch (Exception nre) {
+			l.warning(nre.getMessage());
+			throw nre;
 		}
+		
 		RandomAccessFile raf = null;
 		try {
+			l.info("Opening "+ff.getPath()+" to report sequence from "+sr.getStart()+ "("+sr.getLength()+" bytes)");
 			raf = new RandomAccessFile(ff.getPath(), "r");
 			raf.seek(sr.getStart());
 			byte[] bytes = new byte[sr.getLength()];
@@ -104,6 +114,7 @@ public class Queries {
 				throw new IOException("Cannot read "+sr.getLength()+" bytes (only got "+n+")!");
 			}
 			String s = new String(bytes, Charset.forName("US-ASCII"));
+			l.info("Successfully read sequence "+seqID);
 			return s;
 		} catch (Exception e) {
 			e.printStackTrace();

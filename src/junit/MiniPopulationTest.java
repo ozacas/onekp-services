@@ -114,15 +114,23 @@ public class MiniPopulationTest {
 		assertEquals(2, sr.countSequencesInFile(ff));
 		
 		// and that the right data is being referenced...
-		String seq1 = sr.getSequence(f, "Vocar20011164m");
-		assertNotNull(seq1);
-		assertTrue(seq1.startsWith(">Vocar20011164m"));
-		assertTrue(seq1.endsWith("AFQ"));
+		try {
+			String seq1 = sr.getSequence(f, "Vocar20011164m");
+			assertNotNull(seq1);
+			assertTrue(seq1.startsWith(">Vocar20011164m"));
+			assertTrue(seq1.endsWith("AFQ"));
+		} catch (Exception e) {
+			fail("getSequence() must not fail!");
+		}
 		
-		String seq2 = sr.getSequence(f, "Cre12.g535350.t1.2");
-		assertNotNull(seq2);
-		assertTrue(seq2.startsWith(">Cre12.g535350.t1.2"));
-		assertTrue(seq2.endsWith("MAQDALRDGGAAALAALQAKVYGLSGAADAMAAWRRQLLAAAPLGTAAALGRLDVSLPAAV"));
+		try {
+			String seq2 = sr.getSequence(f, "Cre12.g535350.t1.2");
+			assertNotNull(seq2);
+			assertTrue(seq2.startsWith(">Cre12.g535350.t1.2"));
+			assertTrue(seq2.endsWith("MAQDALRDGGAAALAALQAKVYGLSGAADAMAAWRRQLLAAAPLGTAAALGRLDVSLPAAV"));
+		} catch (Exception e) {
+			fail("getSequence() must not fail!");
+		}
 		
 		// check that datasetdesignation & fastafile tables have been populated
 		assertEquals(sr.getNumberofDatasetDesignations(dsd.getLabel()), n_datasets_before+1);
