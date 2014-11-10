@@ -21,7 +21,10 @@ import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.services.impl.OneKPSequenceService;
 
 /**
- * Responsible for reading a sequence from the specified file
+ * Responsible for performing essential system-wide queries. The caller must pass a valid {@link OneKPSequenceService}
+ * to use as this provides the database <code>EntityManager</code> (and logger) to use. The queries are written to
+ * be valid for OpenJPA 2.x, but should also work for EclipseLink and Hibernate (untested).
+ * 
  * @author acassin
  *
  */
