@@ -1,7 +1,9 @@
 package au.edu.unimelb.plantcell.services.impl;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Set;
 
 import javax.activation.DataHandler;
 import javax.ejb.Stateless;
@@ -27,6 +29,14 @@ public class MAAB {
 	@Context 
 	private ServletContext servletContext;
 	
+	/**
+	 * Returns perl scripts as plain text to the caller based on the specified path (which must correspond to a name
+	 * specified in the published paper). The scripts are served from WEB-INF/scripts so anything placed there
+	 * will be served from the .war file
+	 * 
+	 * @param path
+	 * @return
+	 */
 	@GET
 	@Path("scripts/{id}")
 	public Response getScript(@PathParam("id") final String path) {
@@ -37,6 +47,34 @@ public class MAAB {
 			return Response.serverError().status(500).entity(e.getMessage()).build();
 		}
 		
+	}
+	
+	/**
+	 * Returns a list of available scripts to the caller
+	 * 
+	 * @return
+	 */
+	@GET
+	@Path("list") 
+	public Response getScripts() {
+		try {
+			Set<String> scripts = servletContext.getResourcePaths("/scripts");
+			if (scripts == null) {
+				throw new IOException("No scripts in onekp.war!");
+			}
+			StringBuilder sb = new StringBuilder();
+			for (String s : scripts) {
+				if (!s.endsWith(".pl")) {
+					continue;
+				}
+				sb.append(s);
+				sb.append('\n');
+			}
+			return Response.ok(sb.toString()).build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Response.serverError().status(500).entity(e.getMessage()).build();
+		}
 	}
 	
 	private DataHandler getInternalDataFile(final String path) throws IOException {

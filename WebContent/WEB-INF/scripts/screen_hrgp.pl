@@ -1,4 +1,20 @@
 #!/usr/bin/perl -w 
+# 
+# Simple minding program to read a list of fasta files (which must include a 1kp sample ID in their filename)
+# and process each sequence in that file looking for:
+# 1) suitable bias in their composition eg. %PAST as proxy for AGP
+# 2) minimum length 90AA
+# 3) minimum 10% proline across entire protein (including signal sequences)
+# 
+# Sequences which pass these tests are output to the file specified by -o (must be specified), with the sample ID prepended.
+# These sequences are then given to the MAAB pipeline for processing and, if suitable, classification.
+#
+# Author: Andrew Cassin, 2014
+#
+# External Requirements: BioPerl, Perl
+#
+# Usage: perl  screen_hrgp.pl -o output_biased_sequences.fasta [-v]
+#
 use strict;
 use Bio::SeqIO;
 use Getopt::Std qw( getopts );
