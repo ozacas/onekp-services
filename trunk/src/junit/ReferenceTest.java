@@ -17,7 +17,6 @@ import javax.persistence.Persistence;
 
 import org.junit.Test;
 
-import au.edu.unimelb.plantcell.jpa.dao.SequenceReference;
 import au.edu.unimelb.plantcell.jpa.dao.SequenceType;
 import au.edu.unimelb.plantcell.jpa.dao.k25_SeqRef;
 import au.edu.unimelb.plantcell.seqdb.Queries;
