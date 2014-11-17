@@ -46,6 +46,44 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	}
 	
 	@Override
+	public String getSampleIDFromSequenceID(final String id) {
+		assert(id != null);
+		int start = "scaffold-".length();
+		return id.substring(start,start+4);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isFullLengthID(final String id) {
+		if (id != null && id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void validateID(final String id) throws IOException {
+		if (!isFullLengthID(id)) {
+			throw new IOException("k25s dataset expects id's of the form: scaffold-ABCD-1234");
+		}
+		logger.info(id+" is valid.");
+	}
+	
+	/**
+	 * Subclasses must override this to ensure the correct id is looked up in the database
+	 * @param id whatever the user provides
+	 * @return
+	 */
+	public String getSequenceIDFromSequenceID(final String id) {
+		return id;
+	}
+	
+	@Override
 	public EntityManager getEntityManager() {
 		synchronized (emf) {
 			if (seqdb_onekp == null) {
@@ -54,22 +92,6 @@ public class k25ScaffoldService extends OneKPSequenceService {
 			return seqdb_onekp;
 		}
 	}
-	
-	/**
-	 * Throws an exception if the ID is not in a suitable format, otherwise nothing. Called before any
-	 * response to a web request is done.
-	 * 
-	 * @param id
-	 * @throws IOException
-	 */
-	@Override
-	public void validateID(final String id) throws IOException {
-		if (!id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
-			throw new IOException("Invalid 1KP ID: expected eg. scaffold-ABCD-1234");
-		}
-		getLogger().info(id+" is valid.");
-	}	
-	
 	
 	@GET
 	@Path("protein/{id}")
@@ -95,6 +117,9 @@ public class k25ScaffoldService extends OneKPSequenceService {
 		return r;
 	}
 	
+	@GET
+	@Path("all/{id}")
+	@RolesAllowed("1kp_user")
 	@Override
 	public Response getAll(String id) {
 		Logger l = getLogger();

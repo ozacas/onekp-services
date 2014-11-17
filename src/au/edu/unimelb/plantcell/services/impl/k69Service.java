@@ -49,15 +49,33 @@ public class k69Service extends OneKPSequenceService {
 			return seqdb_onekp;
 		}
 	}
+
+	@Override
+	public boolean isFullLengthID(final String id) {
+		if (id != null && 
+				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+$")) {
+			return true;
+		}
+		return false;
+	}
 	
 	@Override
 	public void validateID(final String id) throws IOException {
-		if (!id.matches("^Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\.0-9]+_Length_\\d+_\\d+$")) {
-			throw new IOException("Invalid Oases assembly ID: expected eg. Locus_1_Transcript_4/13_Confidence_0.441_Length_2447_1");
+		boolean ok = false;
+		if (isFullLengthID(id)) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+$")) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+$")) {
+			ok = true;
+		}
+		
+		if (!ok) {
+			throw new IOException("Invalid Oases assembly ID: expected eg. ABCD_Locus_1_Transcript_4");
 		}
 		logger.info(id+" is valid.");
 	}
-
+	
 	@GET
 	@Path("protein/{id}")
 	@RolesAllowed("1kp_user")

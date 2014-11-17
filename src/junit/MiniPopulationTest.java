@@ -115,7 +115,7 @@ public class MiniPopulationTest {
 		
 		// and that the right data is being referenced...
 		try {
-			String seq1 = sr.getSequence(f, "Vocar20011164m");
+			String seq1 = sr.getFastaEntry(f, "Vocar20011164m");
 			assertNotNull(seq1);
 			assertTrue(seq1.startsWith(">Vocar20011164m"));
 			assertTrue(seq1.endsWith("AFQ"));
@@ -124,7 +124,7 @@ public class MiniPopulationTest {
 		}
 		
 		try {
-			String seq2 = sr.getSequence(f, "Cre12.g535350.t1.2");
+			String seq2 = sr.getFastaEntry(f, "Cre12.g535350.t1.2");
 			assertNotNull(seq2);
 			assertTrue(seq2.startsWith(">Cre12.g535350.t1.2"));
 			assertTrue(seq2.endsWith("MAQDALRDGGAAALAALQAKVYGLSGAADAMAAWRRQLLAAAPLGTAAALGRLDVSLPAAV"));

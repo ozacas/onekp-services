@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang.WordUtils;
@@ -35,6 +34,12 @@ public abstract class OneKPSequenceService {
 	 * @return
 	 */
 	public abstract Logger getLogger();
+	
+	/**
+	 * Returns true if the specified ID is probably full length (we cant reliably tell if say a digit is missing)
+	 * otherwise false
+	 */
+	public abstract boolean isFullLengthID(String id);
 	
 	/**
 	 * Returns a textual summary of the specified sample
@@ -67,6 +72,31 @@ public abstract class OneKPSequenceService {
 	}
 	
 	/**
+	 * Subclasses of the service must override this with their own implementation if not valid for the ID's
+	 * being requested by the user. This implementation requires the sample id to begin the identifier supplied by
+	 * the user. It is not the job of this method to validate input: that will have already been done by validateID()
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public String getSampleIDFromSequenceID(final String id) {
+		assert(id != null);
+		return id.substring(0,4);
+	}
+	
+	/**
+	 * Subclasses must override this to ensure the correct id is looked up in the database. The default implementation
+	 * does not use the sample ID to do lookup, which is at the start of the id, as that would require 
+	 * longer ID's (redundant information) to be stored in the database.
+	 * 
+	 * @param id whatever the user provides
+	 * @return
+	 */
+	public String getSequenceIDFromSequenceID(final String id) {
+		return id.substring(5);
+	}
+	
+	/**
 	 * Returns a single sequence for each of the specified sequence types which matches the given id.
 	 * @param id
 	 * @param sequence_types
@@ -76,32 +106,89 @@ public abstract class OneKPSequenceService {
 		try {
 			Logger logger = getLogger();
 			validateID(id);
-			String onekp_sample_id = id.substring(0,4);
-			String seq_id = id.substring(5);
 			Queries q = new Queries(this);
 			if (q != null) {
 				logger.info("Constructed valid queries object.");
 			} 
-			StringBuilder sb = new StringBuilder(10 * 1024);
+			final StringBuilder sb = new StringBuilder(10 * 1024);
+			SequenceCallback cb = new SequenceCallback() {
+
+				@Override
+				public void matchingSequence(String s) {
+					sb.append(s);
+					sb.append('\n');
+				}
+				
+			};
 			for (SequenceType st : sequence_types) {
-				File     f = q.findFastaFile(onekp_sample_id, st);
+				File     f = q.findFastaFile(id, st);
 				if (f != null) {
-					String result = q.getSequence(f, seq_id);
-					if (result != null) {
-						sb.append(result);
-						sb.append('\n');
-					} else {
-						logger.warning("Got no result for "+seq_id+" "+getDesignation().getLabel());
-					}
+					q.getSingleSequence(f, id, cb);
 				} else {
-					logger.warning("Could not locate FASTA file for ("+st+"): "+onekp_sample_id);
+					logger.warning("Could not locate FASTA file for ("+st+"): "+id);
 				}
 			}
-			logger.fine("Created result for "+seq_id);
-			return Response.ok(WordUtils.wrap(sb.toString(), 60, "\n", true)).build();
+			if (sb.length() > 0) {
+				logger.fine("Found result for "+id);
+				return Response.ok(WordUtils.wrap(sb.toString(), 90, "\n", true)).build();
+			} else {
+				logger.warning("No sequence found for "+id);
+				return Response.status(500).entity("No sequence for "+id).build();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+	
+	private Response doShortGet(final String partial_id, final SequenceType[] sequence_types) {
+		try {
+			final Logger logger = getLogger();
+			validateID(partial_id);
+			Queries q = new Queries(this);
+			if (q != null) {
+				logger.info("Constructed valid queries object.");
+			} 
+			final StringBuilder sb = new StringBuilder(10 * 1024);
+			for (SequenceType st : sequence_types) {
+				File     f = q.findFastaFile(partial_id, st);
+				if (f != null) {
+					q.getSequencesByPartialID(f, partial_id, new SequenceCallback() {
+
+						@Override
+						public void matchingSequence(final String s) {
+							//logger.info(s);
+							sb.append(s);
+							sb.append('\n');
+						}
+						
+					});
+				} else {
+					logger.warning("Could not locate FASTA file for ("+st+"): "+partial_id);
+				}
+			}
+			logger.fine("Created result for "+partial_id);
+			return Response.ok(WordUtils.wrap(sb.toString(), 90, "\n", true)).build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+	
+	/**
+	 * Similar to doGet() but this supports queries using the short ID. This will ultimately
+	 * boil down to a query using <code>LIKE 'id%'</code> to match the relevant IDs. Its possible
+	 * that more than one sequence may match the partial name, if thats the case all will be reported.
+	 * 
+	 * @param id
+	 * @param types
+	 * @return
+	 */
+	protected Response doShortOrLongGet(final String id, SequenceType[] types) {
+		if (!isFullLengthID(id)) {
+			return doShortGet(id, types);
+		} else {
+			return doGet(id, types);
 		}
 	}
 	
@@ -149,7 +236,13 @@ public abstract class OneKPSequenceService {
 	
 	
 	/**
-	 * validates a sequence ID as provided by the user. Throws if the ID is not valid.
+	 * Validates a sequence ID as provided by the user. Throws if the ID is not valid.
+	 * 
+	 * Throws an exception if the ID is not in a suitable format, otherwise nothing. Called before any
+	 * response to a web request is done.
+	 * 
+	 * @param id
+	 * @throws IOException
 	 */
 	public abstract void validateID(final String id) throws IOException;
 	
@@ -173,7 +266,7 @@ public abstract class OneKPSequenceService {
 	 * @param id
 	 * @return JAX-RS response
 	 */
-	public abstract Response getAll(@PathParam("id") final String id);
+	public abstract Response getAll(final String id);
 	
 	/**
 	 * Returns all proteins for the specified sample (large response)
@@ -188,12 +281,12 @@ public abstract class OneKPSequenceService {
 	 * @param onekp_sample_id four letter uppercase sample ID eg. ABCD
 	 * @return JAX-RS all known proteins for the specified dataset (service) and sample
 	 */
-	public abstract Response getTranscriptome(@PathParam("sample") final String onekp_sample_id);
+	public abstract Response getTranscriptome(final String onekp_sample_id);
 	
 	/**
 	 * Get summary details of a sample, similar in spirit to the OneKP sample page but this
 	 * works on a per dataset (service) basis, where not all samples may be present in a given dataset.
 	 * 
 	 */
-	public abstract Response getSummary(@PathParam("sample") final String onekp_sample_id);
+	public abstract Response getSummary(final String onekp_sample_id);
 }

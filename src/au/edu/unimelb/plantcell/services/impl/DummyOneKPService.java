@@ -47,6 +47,10 @@ public class DummyOneKPService extends OneKPSequenceService {
 		}
 	}
 
+	public boolean isFullLengthID(String id) {
+		return true;
+	}
+	
 	@Override
 	public void validateID(String id) throws IOException {
 		// NO-OP
