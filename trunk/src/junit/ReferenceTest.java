@@ -74,11 +74,11 @@ public class ReferenceTest {
 			assertEquals("/1kp/4website/k25/proteomes/ABCD-SOAPdenovo-Trans-assembly.prots.out.fa", abcd.getAbsolutePath());
 			
 			// check the first, last and a couple of randomly chosen proteins for correct sequence
-			k25_SeqRef first_seq = (k25_SeqRef) q.getSequenceReference("ABCD", "1");
+			k25_SeqRef first_seq = (k25_SeqRef) q.getSequenceReference("ABCD_1");
 			assertNotNull(first_seq);
 			log.info("Resolved ABCD_"+first_seq.getSequenceID());
-			k25_SeqRef last_seq  = (k25_SeqRef) q.getSequenceReference("ABCD", "78577");
-			k25_SeqRef rand1_seq = (k25_SeqRef) q.getSequenceReference("ABCD", "9731");
+			k25_SeqRef last_seq  = (k25_SeqRef) q.getSequenceReference("ABCD_78577");
+			k25_SeqRef rand1_seq = (k25_SeqRef) q.getSequenceReference("ABCD_9731");
 			assertNotNull(last_seq);
 			assertNotNull(rand1_seq);
 			

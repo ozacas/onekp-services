@@ -50,45 +50,62 @@ public class k39Service extends OneKPSequenceService {
 	}
 	
 	/**
-	 * Throws an exception if the ID is not in a suitable format, otherwise nothing. Called before any
-	 * response to a web request is done.
-	 * 
-	 * @param id
-	 * @throws IOException
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isFullLengthID(final String id) {
+		if (id != null && 
+				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+$")) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void validateID(final String id) throws IOException {
-		if (!id.matches("^Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\.0-9]+_Length_\\d+_\\d+$")) {
-			throw new IOException("Invalid Oases assembly ID: expected eg. Locus_1_Transcript_4/13_Confidence_0.441_Length_2447_1");
+		boolean ok = false;
+		if (isFullLengthID(id)) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+$")) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+$")) {
+			ok = true;
+		}
+		
+		if (!ok) {
+			throw new IOException("Invalid Oases assembly ID: expected eg. ABCD_Locus_1_Transcript_4");
 		}
 		logger.info(id+" is valid.");
 	}
 	
 	@GET
-	@Path("protein/{id}")
+	@Path("protein/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getProtein(@PathParam("id") final String id) { 
 		logger.info("Getting protein id is: "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.AA });
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA });
 	}
 	
 	@GET
-	@Path("transcript/{id}")
+	@Path("transcript/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getTranscript(@PathParam("id") final String id) {
-		logger.fine("Getting transcript contig id is: "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.RNA });
+		logger.info("Getting transcript contig id is: "+(id != null));
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.RNA });
 	}
 	
 	@GET
-	@Path("all/{id}")
+	@Path("all/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getAll(@PathParam("id") final String id) {
 		logger.fine("Getting all available sequence: "+(id != null));
-		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
 	
 	@GET
