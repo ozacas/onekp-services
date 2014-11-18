@@ -3,6 +3,8 @@ package au.edu.unimelb.plantcell.services.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.ws.rs.core.Response;
@@ -92,8 +94,24 @@ public abstract class OneKPSequenceService {
 	 * @param id whatever the user provides
 	 * @return
 	 */
-	public String getSequenceIDFromSequenceID(final String id) {
-		return id.substring(5);
+	public String getSequenceIDFromSequenceID(final String id, SequenceType st) {
+		assert(id != null && st != null);
+		String ret = id.substring(5);
+		/*
+		 * an Oases protein ID has _x appended to the ID (in case a transcript has more than one ORF). 
+		 * If this ID is used to search for a transcript it will fail. So we recognise this case and handle it appropriately. Otherwise the ID is left alone. 
+		 */
+		if (st == SequenceType.RNA && ret.startsWith("Locus_")) {
+			Pattern p = Pattern.compile("Confidence_[\\d\\\\.]+_Length_\\d+(_\\d+)$");
+			Matcher m = p.matcher(ret);
+			if (m.find()) {
+				return ret.substring(0, ret.length() - m.group(1).length());
+			} else {
+				return ret;
+			}
+		} else {
+			return ret;
+		}
 	}
 	
 	/**
@@ -120,10 +138,12 @@ public abstract class OneKPSequenceService {
 				}
 				
 			};
+			String sample_id = getSampleIDFromSequenceID(id);
+			logger.info("Extracted OneKP sample ID: "+sample_id+" from "+id);
 			for (SequenceType st : sequence_types) {
-				File     f = q.findFastaFile(id, st);
+				File     f = q.findFastaFile(st, sample_id);
 				if (f != null) {
-					q.getSingleSequence(f, id, cb);
+					q.getSingleSequence(f, cb, getSequenceIDFromSequenceID(id, st));
 				} else {
 					logger.warning("Could not locate FASTA file for ("+st+"): "+id);
 				}
@@ -151,7 +171,8 @@ public abstract class OneKPSequenceService {
 			} 
 			final StringBuilder sb = new StringBuilder(10 * 1024);
 			for (SequenceType st : sequence_types) {
-				File     f = q.findFastaFile(partial_id, st);
+				String sample_id = getSampleIDFromSequenceID(partial_id);
+				File     f = q.findFastaFile(st, sample_id);
 				if (f != null) {
 					q.getSequencesByPartialID(f, partial_id, new SequenceCallback() {
 
@@ -162,7 +183,7 @@ public abstract class OneKPSequenceService {
 							sb.append('\n');
 						}
 						
-					});
+					}, st);
 				} else {
 					logger.warning("Could not locate FASTA file for ("+st+"): "+partial_id);
 				}
@@ -200,11 +221,15 @@ public abstract class OneKPSequenceService {
 				logger.info("Constructed valid queries object.");
 			} 
 
-			File     f = q.findFastaFile(onekp_sample_id, st);
+			if (onekp_sample_id.length() != 4) {
+				throw new Exception("OneKP sample ID must be four letters!");
+			}
+			
+			File     f = q.findFastaFile(st, onekp_sample_id);
 			if (f != null) {
 					return Response.ok(f).build();
 			} else {
-					throw new IOException("Could not locate FASTA file for proteome: "+onekp_sample_id);
+					throw new IOException("Could not locate FASTA file for: "+onekp_sample_id+" "+st);
 			}
 		} catch (Exception e) {
 			//e.printStackTrace();

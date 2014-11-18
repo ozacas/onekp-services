@@ -68,10 +68,12 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	 */
 	@Override
 	public void validateID(final String id) throws IOException {
-		if (!isFullLengthID(id)) {
-			throw new IOException("k25s dataset expects id's of the form: scaffold-ABCD-1234");
+		if (isFullLengthID(id)) {
+			return;
+		} else if (id != null && id.matches("^scaffold-[A-Z]{4}-\\d+$")) {
+			return;
 		}
-		logger.info(id+" is valid.");
+		throw new IOException("k25s dataset expects id's of the form: scaffold-ABCD-1234");
 	}
 	
 	/**
@@ -79,7 +81,8 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	 * @param id whatever the user provides
 	 * @return
 	 */
-	public String getSequenceIDFromSequenceID(final String id) {
+	@Override
+	public String getSequenceIDFromSequenceID(final String id, final SequenceType st) {
 		return id;
 	}
 	
@@ -100,9 +103,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getProtein(@PathParam("id") final String id) { 
 		Logger l = getLogger();
 		l.info("Getting protein id is: "+(id != null));
-		Response r = doGet(id, new SequenceType[] { SequenceType.AA });
-		l.info("Protein get completed.");
-		return r;
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA });
 	}
 	
 	@GET
@@ -112,9 +113,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getTranscript(@PathParam("id") final String id) {
 		Logger l = getLogger();
 		l.fine("Getting transcript contig id is: "+(id != null));
-		Response r = doGet(id, new SequenceType[] { SequenceType.RNA });
-		l.info("Transcript get completed.");
-		return r;
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.RNA });
 	}
 	
 	@GET
@@ -124,9 +123,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getAll(String id) {
 		Logger l = getLogger();
 		l.fine("Getting all sequences for "+(id != null));
-		Response r = doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
-		l.info("Get all completed.");
-		return r;
+		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
 
 	@GET
