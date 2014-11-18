@@ -55,7 +55,7 @@ public class k39Service extends OneKPSequenceService {
 	@Override
 	public boolean isFullLengthID(final String id) {
 		if (id != null && 
-				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+$")) {
+				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+(_\\d+)?$")) {
 			return true;
 		}
 		return false;
@@ -76,7 +76,7 @@ public class k39Service extends OneKPSequenceService {
 		}
 		
 		if (!ok) {
-			throw new IOException("Invalid Oases assembly ID: expected eg. ABCD_Locus_1_Transcript_4");
+			throw new IOException("Invalid ID for k39: expected eg. ABCD_Locus_1_Transcript_4 but got: "+id);
 		}
 		logger.info(id+" is valid.");
 	}

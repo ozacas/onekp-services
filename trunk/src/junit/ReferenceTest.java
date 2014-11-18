@@ -67,7 +67,7 @@ public class ReferenceTest {
 		Queries q = new Queries(new DummyOneKPService());
 		
 		try {
-			File abcd = q.findFastaFile("ABCD", SequenceType.AA);
+			File abcd = q.findFastaFile(SequenceType.AA, "ABCD");
 			Logger log = Logger.getLogger("ReferenceTest");
 
 			log.info("Got "+abcd.getAbsolutePath()+" for ABCD protein fasta file");
