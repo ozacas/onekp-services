@@ -16,7 +16,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
- * Returns key files to the end user as published in the literature
+ * Returns key files to the end user for a paper yet-to-be published on HRGP (Hydroxy-proline-rich-glycoproteins).
+ * We implement this service to describe methods and protocols used, rather than bogging down the paper
+ * with details only a few people will care about. The paper simply cites a URL rather than the details.
  * 
  * @author acassin
  *
@@ -40,6 +42,9 @@ public class MAAB {
 	@Path("scripts/{id}")
 	public Response getScript(@PathParam("id") final String path) {
 		try {
+			if (!path.matches("^\\w+\\.pl$")) {
+				throw new IOException("Illegal script pathname: "+path);
+			}
 			DataHandler dh = getInternalDataFile(path);
 			return Response.ok(dh).build();
 		} catch (Exception e) {
@@ -48,6 +53,32 @@ public class MAAB {
 		
 	}
 	
+	/**
+	 * This service implements URLs for methods which are too detailed to include in the body of the paper.
+	 */
+	@GET
+	@Path("methods/{id}")
+	@Produces(MediaType.TEXT_HTML)
+	public Response getMethod(@PathParam("id") final String path) {
+		try {
+			DataHandler dh = getInternalMethodFile(path);
+			return Response.ok(dh).build();
+		} catch (Exception e) {
+			return Response.serverError().status(500).entity(e.getMessage()).build();
+		}
+	}
+	
+	@GET
+	@Path("images/{id}")
+	@Produces("image/png")
+	public Response getImage(@PathParam("id") final String path) {
+		try {
+			DataHandler dh = getInternalImageFile(path);
+			return Response.ok(dh).build();
+		} catch (Exception e) {
+			return Response.serverError().status(500).entity(e.getMessage()).build();
+		}
+	}
 	/**
 	 * Returns a list of available scripts to the caller
 	 * 
@@ -76,15 +107,30 @@ public class MAAB {
 		}
 	}
 	
-	private DataHandler getInternalDataFile(final String path) throws IOException {
-		if (path == null || path.length() > 1000) {
+	private void rejectBogusPath(final String path) throws IOException {
+		if (path == null || path.length() > 1000 || path.matches("^\\s*$") || path.indexOf("..") >= 0) {
 			throw new IOException("Bogus file request: "+path);
 		}
-		
-		URL u = servletContext.getResource("/WEB-INF/scripts/"+path);
+	}
+	
+	private DataHandler getInternalFile(final String subfolder, final String path) throws IOException {
+		rejectBogusPath(path);
+		URL u = servletContext.getResource("/WEB-INF/"+subfolder+"/"+path);
 		if (u == null) {
 			throw new IOException("Unable to read: "+path);
 		}
 		return new DataHandler(u);
+	}
+	
+	private DataHandler getInternalDataFile(final String path) throws IOException {
+		return getInternalFile("scripts", path);
+	}
+	
+	private DataHandler getInternalMethodFile(final String path) throws IOException {
+		return getInternalFile("methods", path);
+	}
+	
+	private DataHandler getInternalImageFile(final String path) throws IOException {
+		return getInternalFile("images", path);
 	}
 }
