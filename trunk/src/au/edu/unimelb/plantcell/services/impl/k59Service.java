@@ -49,41 +49,9 @@ public class k59Service extends OneKPSequenceService {
 			return seqdb_onekp;
 		}
 	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isFullLengthID(final String id) {
-		if (id != null && 
-				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+$")) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void validateID(final String id) throws IOException {
-		boolean ok = false;
-		if (isFullLengthID(id)) {
-			ok = true;
-		} else if (id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+$")) {
-			ok = true;
-		} else if (id.matches("^[A-Z]{4}_Locus_\\d+$")) {
-			ok = true;
-		}
-		
-		if (!ok) {
-			throw new IOException("Invalid Oases assembly ID: expected eg. ABCD_Locus_1_Transcript_4");
-		}
-		logger.info(id+" is valid.");
-	}
 
 	@GET
-	@Path("protein/{id}")
+	@Path("protein/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getProtein(@PathParam("id") final String id) { 
@@ -92,7 +60,7 @@ public class k59Service extends OneKPSequenceService {
 	}
 	
 	@GET
-	@Path("transcript/{id}")
+	@Path("transcript/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getTranscript(@PathParam("id") final String id) {
@@ -101,7 +69,7 @@ public class k59Service extends OneKPSequenceService {
 	}
 	
 	@GET
-	@Path("all/{id}")
+	@Path("all/{id : .+}")
 	@RolesAllowed("1kp_user")
 	@Override
 	public Response getAll(@PathParam("id") final String id) {
@@ -131,5 +99,10 @@ public class k59Service extends OneKPSequenceService {
 	@Override
 	public Response getSummary(@PathParam("sample") final String onekp_sample_id) {
 		return getSampleSummary(onekp_sample_id);
+	}
+
+	@Override
+	public void validateID(String id) throws IOException {
+		validateOasesAssemblyID(id);
 	}
 }

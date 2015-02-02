@@ -1,6 +1,7 @@
 package au.edu.unimelb.plantcell.seqdb;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
@@ -108,7 +109,7 @@ public class Queries {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void getSingleSequence(final File fasta_file, final SequenceCallback cb, final String sid) throws Exception {
+	public void getSingleSequence(final File fasta_file, final SequenceCallback cb, final String sid) throws FileNotFoundException,IOException,NoResultException {
 		assert(fasta_file != null && sid != null && cb != null);
 		
 		EntityManager em = service.getEntityManager();
@@ -126,20 +127,16 @@ public class Queries {
 		}
 		FastaFile ff = fastas.get(0);
 		String entity = getSeqRefEntityName();
-		l.info("Fetching record from "+entity+" for "+sid+" from "+ff.getPath());
+		int ffid = ff.getID();
+		l.info("Fetching record from "+entity+" for "+sid+" from "+ff.getPath()+" ffid="+ffid);
 		q = em.createQuery("select sr from "+entity+" sr where sr.fastaFile.id = :fasta AND sr.sequenceID = :seqID");
-		q.setParameter("fasta", ff.getID());
+		q.setParameter("fasta", ffid);
 		q.setParameter("seqID", sid);
 		SequenceReferenceInterface sr;
-		try {
-			sr = (SequenceReferenceInterface) q.getSingleResult();
-			l.info("Fetched single record for "+sid);
-			reportFastaEntries(l, ff, new SequenceReferenceInterface[] { sr }, cb);
-		} catch (Exception nre) {
-			l.warning(nre.getMessage());
-			throw nre;
-		}
-		
+	
+		sr = (SequenceReferenceInterface) q.getSingleResult();
+		l.info("Fetched single record for "+sid);
+		reportFastaEntries(l, ff, new SequenceReferenceInterface[] { sr }, cb);
 	}
 
 	public int countOneKPSamples() {
@@ -333,12 +330,11 @@ public class Queries {
 		}
 		FastaFile ff = fastas.get(0);
 		String entity = getSeqRefEntityName();
-		String id = service.getSequenceIDFromSequenceID(partial_id, st);
-		l.info("Fetching record from "+entity+" looking for "+id+" from fastafile.id = "+ff.getID());
+		l.info("Fetching record from "+entity+" looking for "+partial_id+" from fastafile.id = "+ff.getID());
 		
 		q = em.createNativeQuery("SELECT sr.SEQ_ID,sr.START,sr.LENGTH FROM "+entity.toUpperCase()+" sr WHERE sr.FASTAFILE_ID = ?1 AND (sr.SEQ_ID LIKE CONCAT(?2, '%'))");
 		q.setParameter(1, ff.getID());
-		q.setParameter(2, id);
+		q.setParameter(2, partial_id);
 		q.setMaxResults(1000);
 		try {
 			List<Object[]> results = q.getResultList();
@@ -365,7 +361,7 @@ public class Queries {
 	}
 
 	private void reportFastaEntries(final Logger l, final FastaFile ff, 
-			final SequenceReferenceInterface[] sr_array, final SequenceCallback cb) throws Exception {
+			final SequenceReferenceInterface[] sr_array, final SequenceCallback cb) throws FileNotFoundException,IOException {
 		assert(cb != null && sr_array != null && sr_array.length > 0 && ff != null && l != null);
 		
 		RandomAccessFile raf = null;
@@ -382,9 +378,6 @@ public class Queries {
 				String s = new String(bytes, Charset.forName("US-ASCII"));
 				cb.matchingSequence(s);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
 		} finally {
 			if (raf != null) {
 				try {
