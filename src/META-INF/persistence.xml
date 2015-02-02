@@ -15,12 +15,11 @@
        
     <properties>
       <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver" />
-      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/seqdb_onekp" />
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/seqdb_onekp?autoReconnect=true" />
       <property name="javax.persistence.jdbc.user" value="root" />
       <property name="javax.persistence.jdbc.password" value="Ethgabitc!" />
       
-      <!--  dangerous setting so not set by default... -->
-      <!--  <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(foreignKeys=true)" /> -->
+    <!--   <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(foreignKeys=true)" /> -->
     </properties>
   </persistence-unit>
   

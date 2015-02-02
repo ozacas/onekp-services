@@ -7,9 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang.WordUtils;
+import javax.ws.rs.core.Response.Status;
 
 import au.edu.unimelb.plantcell.jpa.dao.DatasetDesignation;
 import au.edu.unimelb.plantcell.jpa.dao.SampleAnnotation;
@@ -24,7 +24,11 @@ import au.edu.unimelb.plantcell.seqdb.Queries;
  *
  */
 public abstract class OneKPSequenceService {
-
+	/**
+	 * Used by other oases-bases assembly services
+	 */
+	public Pattern OASES_ID_REGEX = Pattern.compile("^([A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+)(_\\d+)?$");
+	
 	/**
 	 * Must return the database ID which the service requires access to
 	 * @return one of k25, k25s, k39, k49, k59 or k69
@@ -36,13 +40,7 @@ public abstract class OneKPSequenceService {
 	 * @return
 	 */
 	public abstract Logger getLogger();
-	
-	/**
-	 * Returns true if the specified ID is probably full length (we cant reliably tell if say a digit is missing)
-	 * otherwise false
-	 */
-	public abstract boolean isFullLengthID(String id);
-	
+
 	/**
 	 * Returns a textual summary of the specified sample
 	 */
@@ -121,96 +119,68 @@ public abstract class OneKPSequenceService {
 	 * @return
 	 */
 	protected Response doGet(final String id, SequenceType[] sequence_types) {
+		
+		Logger logger = getLogger();
 		try {
-			Logger logger = getLogger();
 			validateID(id);
-			Queries q = new Queries(this);
-			if (q != null) {
-				logger.info("Constructed valid queries object.");
-			} 
-			final StringBuilder sb = new StringBuilder(10 * 1024);
-			SequenceCallback cb = new SequenceCallback() {
+		} catch (IOException ioe) {
+			logger.warning("Invalid ID: "+id);
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+		Queries q = new Queries(this);
+		if (q != null) {
+			logger.info("Constructed valid queries object.");
+		} 
+		final StringBuilder sb = new StringBuilder(10 * 1024);
+		SequenceCallback cb = new SequenceCallback() {
 
-				@Override
-				public void matchingSequence(String s) {
-					sb.append(s);
-					sb.append('\n');
-				}
-				
-			};
-			String sample_id = getSampleIDFromSequenceID(id);
-			logger.info("Extracted OneKP sample ID: "+sample_id+" from "+id);
-			for (SequenceType st : sequence_types) {
-				File     f = q.findFastaFile(st, sample_id);
-				if (f != null) {
-					q.getSingleSequence(f, cb, getSequenceIDFromSequenceID(id, st));
-				} else {
-					logger.warning("Could not locate FASTA file for ("+st+"): "+id);
-				}
+			@Override
+			public void matchingSequence(String s) {
+				sb.append(s);
+				sb.append('\n');
 			}
-			if (sb.length() > 0) {
-				logger.fine("Found result for "+id);
-				return Response.ok(WordUtils.wrap(sb.toString(), 90, "\n", true)).build();
+			
+		};
+		String sample_id = getSampleIDFromSequenceID(id);
+		logger.info("Extracted OneKP sample ID: "+sample_id+" from "+id);
+		for (SequenceType st : sequence_types) {
+			File     f = q.findFastaFile(st, sample_id);
+			String   db_seq_id= getSequenceIDFromSequenceID(id, st);
+			if (f != null) {
+				try {
+					q.getSingleSequence(f, cb, db_seq_id);
+				} catch (NoResultException e) {
+					// if full ID does not match, then fallback to partial ID matching and try again...
+					doPartialIDGet(logger, q, f, db_seq_id, st, cb);
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
+					return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+				}
 			} else {
-				logger.warning("No sequence found for "+id);
-				return Response.status(500).entity("No sequence for "+id).build();
+				logger.warning("Could not locate FASTA file for ("+st+"): "+id);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
 		}
-	}
-	
-	private Response doShortGet(final String partial_id, final SequenceType[] sequence_types) {
-		try {
-			final Logger logger = getLogger();
-			validateID(partial_id);
-			Queries q = new Queries(this);
-			if (q != null) {
-				logger.info("Constructed valid queries object.");
-			} 
-			final StringBuilder sb = new StringBuilder(10 * 1024);
-			for (SequenceType st : sequence_types) {
-				String sample_id = getSampleIDFromSequenceID(partial_id);
-				File     f = q.findFastaFile(st, sample_id);
-				if (f != null) {
-					q.getSequencesByPartialID(f, partial_id, new SequenceCallback() {
-
-						@Override
-						public void matchingSequence(final String s) {
-							//logger.info(s);
-							sb.append(s);
-							sb.append('\n');
-						}
-						
-					}, st);
-				} else {
-					logger.warning("Could not locate FASTA file for ("+st+"): "+partial_id);
-				}
-			}
-			logger.fine("Created result for "+partial_id);
-			return Response.ok(WordUtils.wrap(sb.toString(), 90, "\n", true)).build();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-		}
-	}
-	
-	/**
-	 * Similar to doGet() but this supports queries using the short ID. This will ultimately
-	 * boil down to a query using <code>LIKE 'id%'</code> to match the relevant IDs. Its possible
-	 * that more than one sequence may match the partial name, if thats the case all will be reported.
-	 * 
-	 * @param id
-	 * @param types
-	 * @return
-	 */
-	protected Response doShortOrLongGet(final String id, SequenceType[] types) {
-		if (!isFullLengthID(id)) {
-			return doShortGet(id, types);
+		if (sb.length() > 0) {
+			logger.fine("Found result for "+id);
+			return Response.ok(sb.toString()).build();
 		} else {
-			return doGet(id, types);
+			logger.warning("No sequence found for "+id);
+			return Response.status(500).entity("No sequence for "+id).build();
 		}
+	}
+	
+	private void doPartialIDGet(final Logger logger, final Queries q, final File f, 
+			final String partial_id, final SequenceType st, final SequenceCallback cb) {
+		assert(f != null && q != null && partial_id != null && logger != null);
+		
+		try {
+			q.getSequencesByPartialID(f, partial_id, cb, st);
+		} catch (NoResultException nre) {
+			logger.warning("Could not match "+partial_id+" in "+f.getAbsolutePath());
+		} catch (Exception e) {
+			logger.warning(e.getMessage());
+		}
+		logger.fine("Found sequence for partial ID: "+partial_id);
 	}
 	
 	protected Response getSample(final String onekp_sample_id, final SequenceType st) {
@@ -314,4 +284,24 @@ public abstract class OneKPSequenceService {
 	 * 
 	 */
 	public abstract Response getSummary(final String onekp_sample_id);
+	
+	/**
+	 * Validates an identifier of a sequence for K39..K69 oases assemblies
+	 */
+	public void validateOasesAssemblyID(final String id) throws IOException {
+		boolean ok = false;
+		Matcher m = OASES_ID_REGEX.matcher(id);
+		if (m.matches()) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+$")) {
+			ok = true;
+		} else if (id.matches("^[A-Z]{4}_Locus_\\d+$")) {
+			ok = true;
+		}
+		
+		if (!ok) {
+			throw new IOException("Invalid ID: expected eg. ABCD_Locus_1_Transcript_4 but got: "+id);
+		}
+		getLogger().info(id+" is valid.");
+	}
 }

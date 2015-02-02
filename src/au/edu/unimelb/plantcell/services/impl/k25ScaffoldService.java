@@ -56,19 +56,8 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean isFullLengthID(final String id) {
-		if (id != null && id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public void validateID(final String id) throws IOException {
-		if (isFullLengthID(id)) {
+		if (id.matches("^scaffold-[A-Z]{4}-\\d+-\\S{1,60}$")) {
 			return;
 		} else if (id != null && id.matches("^scaffold-[A-Z]{4}-\\d+$")) {
 			return;
@@ -103,7 +92,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getProtein(@PathParam("id") final String id) { 
 		Logger l = getLogger();
 		l.info("Getting protein id is: "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA });
+		return doGet(id, new SequenceType[] { SequenceType.AA });
 	}
 	
 	@GET
@@ -113,7 +102,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getTranscript(@PathParam("id") final String id) {
 		Logger l = getLogger();
 		l.fine("Getting transcript contig id is: "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.RNA });
+		return doGet(id, new SequenceType[] { SequenceType.RNA });
 	}
 	
 	@GET
@@ -123,7 +112,7 @@ public class k25ScaffoldService extends OneKPSequenceService {
 	public Response getAll(String id) {
 		Logger l = getLogger();
 		l.fine("Getting all sequences for "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
+		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
 
 	@GET

@@ -53,32 +53,8 @@ public class k39Service extends OneKPSequenceService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean isFullLengthID(final String id) {
-		if (id != null && 
-				id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+/\\d+_Confidence_[\\d\\\\.]+_Length_\\d+(_\\d+)?$")) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public void validateID(final String id) throws IOException {
-		boolean ok = false;
-		if (isFullLengthID(id)) {
-			ok = true;
-		} else if (id.matches("^[A-Z]{4}_Locus_\\d+_Transcript_\\d+$")) {
-			ok = true;
-		} else if (id.matches("^[A-Z]{4}_Locus_\\d+$")) {
-			ok = true;
-		}
-		
-		if (!ok) {
-			throw new IOException("Invalid ID for k39: expected eg. ABCD_Locus_1_Transcript_4 but got: "+id);
-		}
-		logger.info(id+" is valid.");
+		validateOasesAssemblyID(id);
 	}
 	
 	@GET
@@ -87,7 +63,7 @@ public class k39Service extends OneKPSequenceService {
 	@Override
 	public Response getProtein(@PathParam("id") final String id) { 
 		logger.info("Getting protein id is: "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA });
+		return doGet(id, new SequenceType[] { SequenceType.AA });
 	}
 	
 	@GET
@@ -96,7 +72,7 @@ public class k39Service extends OneKPSequenceService {
 	@Override
 	public Response getTranscript(@PathParam("id") final String id) {
 		logger.info("Getting transcript contig id is: "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.RNA });
+		return doGet(id, new SequenceType[] { SequenceType.RNA });
 	}
 	
 	@GET
@@ -105,7 +81,7 @@ public class k39Service extends OneKPSequenceService {
 	@Override
 	public Response getAll(@PathParam("id") final String id) {
 		logger.fine("Getting all available sequence: "+(id != null));
-		return doShortOrLongGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
+		return doGet(id, new SequenceType[] { SequenceType.AA, SequenceType.RNA });
 	}
 	
 	@GET

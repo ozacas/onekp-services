@@ -59,11 +59,7 @@ public class k25Service extends OneKPSequenceService {
 		return em;
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isFullLengthID(final String id) {
+	private boolean isFullLengthID(final String id) {
 		if (id != null && id.matches("^[A-Z]{4}_\\d+$")) {
 			return true;
 		}
